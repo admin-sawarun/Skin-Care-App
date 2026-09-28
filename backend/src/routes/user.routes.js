@@ -81,4 +81,6 @@ router.get('/tickets', userController.listTickets);
 
 router.get('/appointments', userController.listAppointments);
 
+router.delete('/account', userController.deleteAccount);
+
 module.exports = router;

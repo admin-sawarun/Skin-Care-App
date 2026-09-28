@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,6 +12,7 @@ const userRoutes = require('./routes/user.routes');
 const doctorRoutes = require('./routes/doctor.routes');
 const adminRoutes = require('./routes/admin.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const publicRoutes = require('./routes/public.routes');
 
 const app = express();
 
@@ -33,11 +35,18 @@ app.get('/health', (req, res) => {
 
 app.use('/uploads', express.static(UPLOAD_DIR));
 
+// Google Play requires an account-deletion page reachable without logging
+// into the app - see routes/public.routes.js for the form's endpoint.
+app.get('/account-deletion', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/account-deletion.html'));
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/public', publicRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

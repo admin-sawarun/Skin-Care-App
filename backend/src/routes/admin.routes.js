@@ -158,4 +158,8 @@ router.get('/video-calls', validate({ query: videoCallsQuerySchema }), adminCont
 // Reports
 router.get('/reports', validate({ query: reportsQuerySchema }), adminController.getReports);
 
+// Account deletion requests (from the public /account-deletion page)
+router.get('/account-deletion-requests', adminController.listAccountDeletionRequests);
+router.post('/account-deletion-requests/:id/complete', adminController.completeAccountDeletionRequest);
+
 module.exports = router;

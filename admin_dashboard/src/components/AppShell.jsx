@@ -14,6 +14,7 @@ import {
   Settings,
   ShieldCheck,
   Stethoscope,
+  Trash2,
   Users,
   Video,
   Workflow,
@@ -32,6 +33,7 @@ const NAV = [
   { to: '/tickets', label: 'Tickets', icon: LifeBuoy },
   { to: '/video-calls', label: 'Video calls', icon: Video },
   { to: '/notifications', label: 'Notifications', icon: BellRing },
+  { to: '/account-deletion-requests', label: 'Account Deletion', icon: Trash2 },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

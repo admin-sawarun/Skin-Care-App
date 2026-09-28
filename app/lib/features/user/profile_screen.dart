@@ -130,9 +130,45 @@ class ProfileScreen extends ConsumerWidget {
               }
             },
           ),
+          _ProfileTile(
+            icon: Icons.delete_forever_rounded,
+            label: 'Delete Account',
+            color: AppColors.error,
+            onTap: () => _deleteAccount(context, ref),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'This permanently deletes your account, submitted cases, photos, chat messages and support tickets. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(apiRepositoryProvider).deleteAccount();
+      await ref.read(appSessionProvider.notifier).logout();
+      if (context.mounted) context.go('/login');
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+    }
   }
 
   Future<void> _changeAvatar(BuildContext context, WidgetRef ref) async {

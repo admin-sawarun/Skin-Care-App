@@ -10,6 +10,7 @@ const { recordCaseStatus } = require('../services/caseHistory');
 const { toCsv } = require('../utils/csv');
 const { buildCaseFilter } = require('../utils/caseFilter');
 const { fillMonthlySeries } = require('../utils/analytics');
+const { deleteUserAccount } = require('../services/accountDeletion');
 
 const SALT_ROUNDS = 10;
 
@@ -793,6 +794,45 @@ const getReports = asyncHandler(async (req, res) => {
   res.json({ type, from: from || null, to: to || null, count: data.length, data });
 });
 
+// GET /api/admin/account-deletion-requests?status=PENDING
+// Requests submitted from the public /account-deletion page (see
+// public.routes.js) - there's no SMS provider yet to verify the requester
+// owns that phone number the way the in-app delete does, so an admin
+// confirms it against the matching user's known history before completing.
+const listAccountDeletionRequests = asyncHandler(async (req, res) => {
+  const { status } = req.query;
+  const requests = await prisma.accountDeletionRequest.findMany({
+    where: status ? { status } : undefined,
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const phones = [...new Set(requests.map((r) => r.phone))];
+  const users = await prisma.user.findMany({ where: { phone: { in: phones } }, select: { id: true, name: true, phone: true } });
+  const userByPhone = new Map(users.map((u) => [u.phone, u]));
+
+  res.json({ data: requests.map((r) => ({ ...r, matchedUser: userByPhone.get(r.phone) ?? null })) });
+});
+
+// POST /api/admin/account-deletion-requests/:id/complete
+// Actually deletes the matching account (if one still exists for that phone)
+// and marks the request COMPLETED either way, so a request for an
+// already-deleted or never-registered number can still be closed out.
+const completeAccountDeletionRequest = asyncHandler(async (req, res) => {
+  const request = await prisma.accountDeletionRequest.findUnique({ where: { id: req.params.id } });
+  if (!request) throw ApiError.notFound('Deletion request not found');
+  if (request.status === 'COMPLETED') throw ApiError.badRequest('Already completed');
+
+  const user = await prisma.user.findUnique({ where: { phone: request.phone } });
+  if (user) await deleteUserAccount(user.id);
+
+  const updated = await prisma.accountDeletionRequest.update({
+    where: { id: request.id },
+    data: { status: 'COMPLETED', processedAt: new Date() },
+  });
+
+  res.json({ accountDeletionRequest: updated, userDeleted: Boolean(user) });
+});
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -821,4 +861,6 @@ module.exports = {
   listNotifications,
   listVideoCalls,
   getReports,
+  listAccountDeletionRequests,
+  completeAccountDeletionRequest,
 };

@@ -8,6 +8,7 @@ const { recordCaseStatus } = require('../services/caseHistory');
 const agora = require('../services/agora');
 const env = require('../config/env');
 const fcm = require('../services/fcm');
+const { deleteUserAccount } = require('../services/accountDeletion');
 
 async function getOwnCaseOrThrow(caseId, userId) {
   const found = await prisma.case.findUnique({ where: { id: caseId } });
@@ -435,6 +436,17 @@ const deleteDeviceToken = asyncHandler(async (req, res) => {
   res.json({ success: true, removed: count });
 });
 
+// DELETE /api/users/account
+// Google Play requires an in-app way to delete the account, not just the web
+// page at /account-deletion - this is that path. Irreversible: cascades to
+// every case, message, solution, ticket, rating and video call (see
+// services/accountDeletion.js), then the JWT is worthless since the row it
+// names is gone.
+const deleteAccount = asyncHandler(async (req, res) => {
+  await deleteUserAccount(req.user.id);
+  res.json({ success: true });
+});
+
 module.exports = {
   registerDeviceToken,
   deleteDeviceToken,
@@ -454,4 +466,5 @@ module.exports = {
   createTicket,
   listTickets,
   listAppointments,
+  deleteAccount,
 };

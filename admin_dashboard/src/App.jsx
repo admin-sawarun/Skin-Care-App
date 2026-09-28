@@ -12,6 +12,7 @@ import UserDetail from './pages/Users/UserDetail';
 import Tickets from './pages/Tickets';
 import VideoCalls from './pages/VideoCalls';
 import Notifications from './pages/Notifications';
+import AccountDeletionRequests from './pages/AccountDeletionRequests';
 import Settings from './pages/Settings';
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/video-calls" element={<VideoCalls />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/account-deletion-requests" element={<AccountDeletionRequests />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

@@ -267,3 +267,26 @@ model DeviceToken {
 
   @@index([ownerId, ownerType])
 }
+
+enum AccountDeletionStatus {
+  PENDING
+  COMPLETED
+}
+
+// Google Play requires a web page, reachable without logging into the app,
+// where a user can request their account be deleted - see the public
+// /account-deletion page and POST /api/public/account-deletion-requests.
+// There's no SMS provider configured yet (see services/otp.js's own comment)
+// so this can't be verified and actioned instantly the way the in-app
+// DELETE /api/users/account path is; an admin confirms the phone number
+// owns the account and completes it from the admin dashboard instead.
+model AccountDeletionRequest {
+  id          String                 @id @default(uuid())
+  phone       String
+  reason      String?
+  status      AccountDeletionStatus  @default(PENDING)
+  createdAt   DateTime               @default(now())
+  processedAt DateTime?
+
+  @@index([status])
+}

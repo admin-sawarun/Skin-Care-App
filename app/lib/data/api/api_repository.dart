@@ -325,6 +325,12 @@ class ApiRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Irreversible - cascades server-side to every case, message, solution,
+  /// ticket and rating tied to this account (see backend's accountDeletion
+  /// service). Caller is responsible for logging out afterwards; the JWT
+  /// stops working the moment the row it names is gone.
+  Future<void> deleteAccount() => _dio.delete('/users/account');
+
   Future<void> updateDoctorProfile({String? name, String? specialization, int? experience, String? avatar}) async {
     final res = await _dio.put('/doctors/profile', data: {
       'name': ?name,
