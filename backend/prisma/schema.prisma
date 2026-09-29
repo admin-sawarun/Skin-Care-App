@@ -248,6 +248,13 @@ model VideoCall {
   status      VideoCallStatus @default(SCHEDULED)
   roomId      String
   createdAt   DateTime        @default(now())
+  // Stamped every time that side fetches a fresh join token (see
+  // getVideoToken in user/doctor.controller.js) - there's no explicit
+  // "left the call" signal from the app, so "the other side's stamp is
+  // stale" is how a second/later join attempt is told apart from someone
+  // who's already actively in the call, to decide whether to alert them again.
+  doctorJoinedAt  DateTime?
+  patientJoinedAt DateTime?
 
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
 

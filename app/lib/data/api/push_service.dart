@@ -82,9 +82,17 @@ Future<void> _initLocalNotifications() async {
 
 /// Fires on the main isolate: the app was already running (foreground or
 /// backgrounded) when the user tapped the notification or its Accept action.
-/// Decline (`showsUserInterface: false`) never reaches this - see
-/// [_onBackgroundNotificationResponse].
+/// Decline (`showsUserInterface: false`) is supposed to be handled entirely
+/// by [_onBackgroundNotificationResponse] instead, without ever reaching
+/// here - but some OEMs (Xiaomi/Vivo/Oppo-style aggressive battery
+/// management) kill the background isolate before it can run, and Android
+/// falls back to delivering the tap here instead. Checking actionId is what
+/// stops that fallback from joining the call on a declined notification.
 Future<void> _onNotificationResponse(NotificationResponse response) async {
+  if (response.actionId == 'decline') {
+    await _localNotifications.cancel(id: _incomingCallNotificationId);
+    return;
+  }
   final caseId = response.payload;
   if (caseId == null || caseId.isEmpty) return;
   await _routeToCall(caseId);

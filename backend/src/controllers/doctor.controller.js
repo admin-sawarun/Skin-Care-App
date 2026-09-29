@@ -10,6 +10,7 @@ const fcm = require('../services/fcm');
 const agora = require('../services/agora');
 const env = require('../config/env');
 const { recordCaseStatus } = require('../services/caseHistory');
+const { markJoinedAndNotify } = require('../services/videoCallPresence');
 
 async function getAssignedCaseOrThrow(caseId, doctorId) {
   const found = await prisma.case.findUnique({ where: { id: caseId } });
@@ -346,18 +347,10 @@ const getVideoToken = asyncHandler(async (req, res) => {
   if (!videoCall) throw ApiError.badRequest('No video call is scheduled for this case');
   console.log(`[VideoCall] doctor ${req.doctor.id} fetching token for call ${videoCall.id} (status=${videoCall.status}, scheduledAt=${videoCall.scheduledAt.toISOString()})`);
 
-  // First participant to fetch a token for a still-SCHEDULED call flips it to
-  // ONGOING so other screens (patient appointment list, admin) reflect reality.
-  // That's also the one moment worth alerting the patient about - they only
-  // know the call was scheduled (possibly days ago), not that the doctor is
-  // now actually waiting in it.
-  if (videoCall.status === 'SCHEDULED') {
-    await prisma.videoCall.update({ where: { id: videoCall.id }, data: { status: 'ONGOING' } });
-    const payload = { caseId: caseRecord.id, title: 'Video call is live', body: `Dr. ${req.doctor.name} has joined the call and is waiting for you.`, type: 'CALL_STARTED' };
-    await prisma.notification.create({ data: { userId: caseRecord.userId, userType: 'USER', title: payload.title, body: payload.body, type: payload.type, caseId: caseRecord.id } });
-    socket.emitToUser(caseRecord.userId, 'notification', payload);
-    await fcm.sendPushNotification({ ownerId: caseRecord.userId, ownerType: 'USER', title: payload.title, body: payload.body, data: { caseId: caseRecord.id, type: 'CALL_STARTED' } });
-  }
+  // Flips a still-SCHEDULED call to ONGOING on first fetch, and alerts the
+  // patient whenever they don't look like they're currently active in the
+  // call - not just the very first join ever (see videoCallPresence.js).
+  await markJoinedAndNotify({ videoCall, caseRecord, isDoctor: true, callerName: req.doctor.name });
 
   const token = agora.generateRtcToken(videoCall.roomId);
 
