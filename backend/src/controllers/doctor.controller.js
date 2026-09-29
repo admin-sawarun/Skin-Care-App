@@ -161,7 +161,7 @@ const addSolution = asyncHandler(async (req, res) => {
         userId: caseRecord.userId,
         userType: 'USER',
         title: 'Your case has a solution',
-        body: `Dr. ${req.doctor.name} has reviewed your case and added a solution.`,
+        body: `${req.doctor.name} has reviewed your case and added a solution.`,
         type: 'SOLUTION_ADDED',
         caseId: caseRecord.id,
       },
@@ -179,7 +179,7 @@ const addSolution = asyncHandler(async (req, res) => {
     ownerId: caseRecord.userId,
     ownerType: 'USER',
     title: 'Your case has a solution',
-    body: `Dr. ${req.doctor.name} has reviewed your case and added a solution.`,
+    body: `${req.doctor.name} has reviewed your case and added a solution.`,
     data: { caseId: caseRecord.id, type: 'SOLUTION_ADDED' },
   });
 
@@ -187,7 +187,7 @@ const addSolution = asyncHandler(async (req, res) => {
   socket.emitToUser(caseRecord.userId, 'solution_added', { caseId: caseRecord.id, solution });
   socket.emitToUser(caseRecord.userId, 'notification', {
     title: 'Your case has a solution',
-    body: `Dr. ${req.doctor.name} has reviewed your case and added a solution.`,
+    body: `${req.doctor.name} has reviewed your case and added a solution.`,
     type: 'SOLUTION_ADDED',
   });
 
@@ -235,14 +235,14 @@ const postCaseMessage = asyncHandler(async (req, res) => {
       userId: caseRecord.userId,
       userType: 'USER',
       title: 'New message from your doctor',
-      body: `Dr. ${req.doctor.name} sent you a message.`,
+      body: `${req.doctor.name} sent you a message.`,
       type: 'NEW_MESSAGE',
       caseId: caseRecord.id,
     },
   });
   socket.emitToUser(caseRecord.userId, 'notification', {
     title: 'New message from your doctor',
-    body: `Dr. ${req.doctor.name} sent you a message.`,
+    body: `${req.doctor.name} sent you a message.`,
     type: 'NEW_MESSAGE',
     caseId: caseRecord.id,
   });
@@ -250,7 +250,7 @@ const postCaseMessage = asyncHandler(async (req, res) => {
     ownerId: caseRecord.userId,
     ownerType: 'USER',
     title: 'New message from your doctor',
-    body: `Dr. ${req.doctor.name} sent you a message.`,
+    body: `${req.doctor.name} sent you a message.`,
     data: { caseId: caseRecord.id, type: 'NEW_MESSAGE' },
   });
 
@@ -296,7 +296,7 @@ const scheduleCall = asyncHandler(async (req, res) => {
       userId: caseRecord.userId,
       userType: 'USER',
       title: 'Video call scheduled',
-      body: `Dr. ${req.doctor.name} scheduled a video consultation with you.`,
+      body: `${req.doctor.name} scheduled a video consultation with you.`,
       caseId: caseRecord.id,
       type: 'CALL_SCHEDULED',
     },
@@ -306,7 +306,7 @@ const scheduleCall = asyncHandler(async (req, res) => {
     ownerId: caseRecord.userId,
     ownerType: 'USER',
     title: 'Video call scheduled',
-    body: `Dr. ${req.doctor.name} scheduled a video consultation with you.`,
+    body: `${req.doctor.name} scheduled a video consultation with you.`,
     data: { caseId: caseRecord.id, roomId, type: 'CALL_SCHEDULED' },
   });
 
@@ -322,7 +322,7 @@ const scheduleCall = asyncHandler(async (req, res) => {
   socket.emitToUser(caseRecord.userId, 'notification', {
     caseId: caseRecord.id,
     title: 'Video call scheduled',
-    body: `Dr. ${req.doctor.name} scheduled a video consultation with you.`,
+    body: `${req.doctor.name} scheduled a video consultation with you.`,
     type: 'CALL_SCHEDULED',
   });
 

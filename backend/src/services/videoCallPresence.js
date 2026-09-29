@@ -34,9 +34,7 @@ async function markJoinedAndNotify({ videoCall, caseRecord, isDoctor, callerName
   const payload = {
     caseId: caseRecord.id,
     title: 'Video call is live',
-    body: isDoctor
-      ? `Dr. ${callerName} has joined the call and is waiting for you.`
-      : `${callerName} has joined the call and is waiting for you.`,
+    body: `${callerName} has joined the call and is waiting for you.`,
     type: 'CALL_STARTED',
   };
 

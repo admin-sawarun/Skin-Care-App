@@ -210,7 +210,7 @@ const assignCase = asyncHandler(async (req, res) => {
   ]);
   if (!caseRecord) throw ApiError.notFound('Case not found');
   if (!doctor) throw ApiError.badRequest('Invalid doctorId');
-  if (!doctor.isAvailable) throw ApiError.badRequest(`Dr. ${doctor.name} is not available for new cases`);
+  if (!doctor.isAvailable) throw ApiError.badRequest(`${doctor.name} is not available for new cases`);
   if (['SOLVED', 'CLOSED'].includes(caseRecord.status)) {
     throw ApiError.badRequest(`A ${caseRecord.status.toLowerCase()} case cannot be reassigned`);
   }
@@ -249,7 +249,7 @@ const assignCase = asyncHandler(async (req, res) => {
 
   const patientNotice = {
     title: 'Doctor assigned',
-    body: `Dr. ${doctor.name} will review your case.`,
+    body: `${doctor.name} will review your case.`,
     type: 'CASE_ASSIGNED',
     caseId: caseRecord.id,
   };
@@ -460,7 +460,7 @@ const deleteDoctor = asyncHandler(async (req, res) => {
       status: 'PENDING',
       changedByType: 'ADMIN',
       changedById: req.admin.id,
-      note: `Returned to queue: Dr. ${existing.name} was removed`,
+      note: `Returned to queue: ${existing.name} was removed`,
     });
   }
 
