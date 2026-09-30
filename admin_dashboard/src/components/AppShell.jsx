@@ -75,8 +75,8 @@ export default function AppShell() {
     <>
       <div className="mb-6 flex items-center justify-between gap-3 lg:mb-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-teal/10 text-brand-teal">
-            <Stethoscope className="h-5 w-5" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-teal/10 p-1.5">
+            <img src="/logo.png" alt="SkinCare" className="h-full w-full object-contain" />
           </div>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">SkinCare</p>

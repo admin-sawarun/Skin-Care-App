@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, HeartPulse, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { api, apiErrorMessage } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/Button';
@@ -66,7 +66,7 @@ export default function Login() {
         <div className="flex flex-col justify-between bg-brand-teal p-8 text-white lg:p-10">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-teal-50">
-              <HeartPulse className="h-3.5 w-3.5" />
+              <img src="/logo.png" alt="SkinCare" className="h-4 w-4 object-contain" />
               SkinCare
             </div>
             <h1 className="mt-8 text-4xl font-heading font-bold tracking-tight">Welcome back</h1>
