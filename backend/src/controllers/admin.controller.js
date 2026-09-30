@@ -57,6 +57,30 @@ const changePassword = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+// GET /api/admin/admins
+// Only the super admin can see/manage this list (see requireSuperAdmin in
+// admin.routes.js) - other admins have no reason to know who else exists.
+const listAdmins = asyncHandler(async (req, res) => {
+  const admins = await prisma.admin.findMany({ orderBy: { createdAt: 'asc' } });
+  res.json({ data: admins.map(sanitize) });
+});
+
+// POST /api/admin/admins
+const createAdmin = asyncHandler(async (req, res) => {
+  const { name, password } = req.body;
+  const email = req.body.email.toLowerCase();
+
+  const existing = await prisma.admin.findUnique({ where: { email } });
+  if (existing) throw ApiError.conflict('An admin with this email already exists');
+
+  const hashed = await bcrypt.hash(password, SALT_ROUNDS);
+  const admin = await prisma.admin.create({
+    data: { name, email, password: hashed },
+  });
+
+  res.status(201).json({ admin: sanitize(admin) });
+});
+
 // ---------------------------------------------------------------------------
 // Analytics
 // ---------------------------------------------------------------------------
@@ -837,6 +861,8 @@ module.exports = {
   getProfile,
   updateProfile,
   changePassword,
+  listAdmins,
+  createAdmin,
   getAnalytics,
   listCases,
   exportCases,

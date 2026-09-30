@@ -58,11 +58,14 @@ enum VideoCallStatus {
 // ---------------------------------------------------------------------------
 
 model Admin {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  // Only the original seeded admin can create further admin accounts - see
+  // requireSuperAdmin in admin.routes.js. Not a general permission tier.
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
 }
 
 model User {

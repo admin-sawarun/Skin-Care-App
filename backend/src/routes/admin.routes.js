@@ -1,6 +1,7 @@
 const express = require('express');
 const { z } = require('zod');
 const validate = require('../middleware/validate');
+const ApiError = require('../utils/ApiError');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const adminController = require('../controllers/admin.controller');
 const { createQuestionFlowSchema, updateQuestionFlowSchema } = require('../validation/questionFlow');
@@ -31,6 +32,19 @@ const changeAdminPasswordSchema = z.object({
   oldPassword: z.string().min(1),
   newPassword: z.string().min(6),
 });
+
+const createAdminSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+// Only the originally-seeded admin (see the migration/seed backfill) can
+// manage other admin accounts.
+function requireSuperAdmin(req, res, next) {
+  if (!req.admin.isSuperAdmin) throw ApiError.forbidden('Only the super admin can manage admin accounts');
+  next();
+}
 
 const listCasesQuerySchema = z.object({
   status: z.enum(CASE_STATUSES).optional(),
@@ -115,6 +129,10 @@ const reportsQuerySchema = z.object({
 router.get('/profile', adminController.getProfile);
 router.put('/profile', validate({ body: updateAdminProfileSchema }), adminController.updateProfile);
 router.put('/profile/password', validate({ body: changeAdminPasswordSchema }), adminController.changePassword);
+
+// Admin accounts (super admin only)
+router.get('/admins', requireSuperAdmin, adminController.listAdmins);
+router.post('/admins', requireSuperAdmin, validate({ body: createAdminSchema }), adminController.createAdmin);
 
 // Analytics
 router.get('/analytics', validate({ query: analyticsQuerySchema }), adminController.getAnalytics);
