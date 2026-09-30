@@ -56,7 +56,7 @@ class SkinCareApp extends ConsumerWidget {
       });
     });
     return MaterialApp.router(
-      title: 'SkinCare',
+      title: 'Lock and Key Skin Care',
       debugShowCheckedModeBanner: false,
       // Lets a foreground push show a SnackBar without a BuildContext.
       scaffoldMessengerKey: PushService.messengerKey,

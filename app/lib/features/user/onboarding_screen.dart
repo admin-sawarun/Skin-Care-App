@@ -77,7 +77,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   SizedBox(width: 32, height: 32, child: Image.asset('assets/images/logo_icon_transparent.png')),
                   const SizedBox(width: 8),
-                  const Text('SkinCare', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 17, color: AppColors.primaryDark)),
+                  const Text('Lock and Key Skin Care', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.primaryDark)),
                   const Spacer(),
                   AnimatedOpacity(
                     opacity: _isLast ? 0 : 1,

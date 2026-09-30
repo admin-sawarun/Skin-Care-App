@@ -325,7 +325,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Icon(Icons.info_outline_rounded, size: 14, color: AppColors.textMuted),
             SizedBox(width: 6),
             Expanded(
-              child: Text('Doctor accounts are created by the SkinCare admin.',
+              child: Text('Doctor accounts are created by the Lock and Key Skin Care admin.',
                   style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
             ),
           ],
@@ -376,7 +376,7 @@ class _Hero extends StatelessWidget {
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
                 child: Text(
-                  isDoctor ? 'Welcome, Doctor' : 'Welcome to SkinCare',
+                  isDoctor ? 'Welcome, Doctor' : 'Welcome to Lock and Key Skin Care',
                   key: ValueKey(isDoctor),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),

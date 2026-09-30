@@ -13,7 +13,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: SkinCareApp()));
     await tester.pump();
 
-    expect(find.text('SkinCare'), findsOneWidget);
+    expect(find.text('Lock and Key Skin Care'), findsOneWidget);
 
     // Splash holds ~2.2s, then a first-time visitor lands on onboarding.
     await tester.pump(const Duration(seconds: 3));

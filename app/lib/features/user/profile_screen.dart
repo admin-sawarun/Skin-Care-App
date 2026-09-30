@@ -94,9 +94,9 @@ class ProfileScreen extends ConsumerWidget {
                 title: const Text('Privacy'),
                 content: const SingleChildScrollView(
                   child: Text(
-                    'SkinCare only uses your case details, photos, and messages to connect you with a '
+                    'Lock and Key Skin Care only uses your case details, photos, and messages to connect you with a '
                     'dermatologist and provide consultation. Your information is shared only with the doctor '
-                    'assigned to your case and the SkinCare admin team, and is never sold to third parties. '
+                    'assigned to your case and the Lock and Key Skin Care admin team, and is never sold to third parties. '
                     'You can request deletion of your account and data at any time by contacting support.',
                   ),
                 ),

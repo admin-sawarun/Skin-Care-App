@@ -23,7 +23,7 @@ class PrescriptionScreen extends ConsumerWidget {
         build: (pwContext) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('SkinCare', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColor.fromInt(0xFF0A7C6E))),
+            pw.Text('Lock and Key Skin Care', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColor.fromInt(0xFF0A7C6E))),
             pw.SizedBox(height: 4),
             pw.Text('Prescription · ${DateFormat('dd MMM yyyy').format(solution.issuedAt)}', style: const pw.TextStyle(fontSize: 10)),
             pw.Divider(),
@@ -98,7 +98,7 @@ class PrescriptionScreen extends ConsumerWidget {
                       child: Image.asset('assets/images/logo_icon.jpg', fit: BoxFit.contain),
                     ),
                     const SizedBox(width: 8),
-                    const Text('SkinCare', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.primary)),
+                    const Text('Lock and Key Skin Care', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.primary)),
                     const Spacer(),
                     Text(DateFormat('dd MMM yyyy').format(solution.issuedAt), style: const TextStyle(color: AppColors.textLight, fontSize: 12)),
                   ],

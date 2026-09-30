@@ -66,8 +66,8 @@ export default function Login() {
         <div className="flex flex-col justify-between bg-brand-teal p-8 text-white lg:p-10">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-teal-50">
-              <img src="/logo.png" alt="SkinCare" className="h-4 w-4 object-contain" />
-              SkinCare
+              <img src="/logo.png" alt="Lock and Key Skin Care" className="h-4 w-4 object-contain" />
+              Lock and Key Skin Care
             </div>
             <h1 className="mt-8 text-4xl font-heading font-bold tracking-tight">Welcome back</h1>
             <p className="mt-4 max-w-sm text-sm text-teal-50/90">

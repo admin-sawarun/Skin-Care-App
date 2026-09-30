@@ -92,7 +92,7 @@ class DoctorProfileScreen extends ConsumerWidget {
               context: context,
               builder: (context) => AlertDialog(
                 title: const Text('Help & Support'),
-                content: const Text('For account or technical issues, please contact the SkinCare admin team.'),
+                content: const Text('For account or technical issues, please contact the Lock and Key Skin Care admin team.'),
                 actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
               ),
             ),

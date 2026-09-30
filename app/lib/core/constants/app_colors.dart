@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Design tokens from the SkinCare App spec.
+/// Design tokens from the Lock and Key Skin Care app spec.
 class AppColors {
   AppColors._();
 

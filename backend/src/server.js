@@ -8,7 +8,7 @@ const server = http.createServer(app);
 initSocket(server);
 
 server.listen(env.PORT, () => {
-  console.log(`SkinCare Consultation API listening on port ${env.PORT} [${env.NODE_ENV}]`);
+  console.log(`Lock and Key Skin Care Consultation API listening on port ${env.PORT} [${env.NODE_ENV}]`);
 });
 
 process.on('unhandledRejection', (reason) => {

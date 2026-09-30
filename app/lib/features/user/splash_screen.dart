@@ -85,8 +85,9 @@ class _AppSplashScreenState extends ConsumerState<AppSplashScreen> {
                   .fadeIn(duration: 400.ms),
               const SizedBox(height: 16),
               const Text(
-                'SkinCare',
-                style: TextStyle(color: AppColors.primaryDark, fontSize: 30, fontWeight: FontWeight.w700),
+                'Lock and Key Skin Care',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.primaryDark, fontSize: 24, fontWeight: FontWeight.w700),
               ).animate().fadeIn(delay: 300.ms, duration: 500.ms),
               const SizedBox(height: 10),
               const Text(

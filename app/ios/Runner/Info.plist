@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>SkinCare</string>
+	<string>Lock and Key Skin Care</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>SkinCare</string>
+	<string>Lock and Key Skin Care</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -27,11 +27,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>SkinCare uses your camera to photograph your skin concern and update your profile photo.</string>
+	<string>Lock and Key Skin Care uses your camera to photograph your skin concern and update your profile photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>SkinCare needs access to your photo library so you can attach photos to a case, chat, or profile.</string>
+	<string>Lock and Key Skin Care needs access to your photo library so you can attach photos to a case, chat, or profile.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>SkinCare uses your microphone during video consultations with your doctor.</string>
+	<string>Lock and Key Skin Care uses your microphone during video consultations with your doctor.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
