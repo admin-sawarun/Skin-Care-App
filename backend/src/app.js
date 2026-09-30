@@ -41,6 +41,15 @@ app.get('/account-deletion', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/account-deletion.html'));
 });
 
+// Linked from the Play Console / App Store Connect listings and from
+// within the app (Settings/Profile).
+app.get('/privacy-policy', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/privacy-policy.html'));
+});
+app.get('/terms-and-conditions', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/terms-and-conditions.html'));
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/doctors', doctorRoutes);
