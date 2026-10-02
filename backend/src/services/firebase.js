@@ -15,7 +15,7 @@
 // Nothing is required to run the server: when neither option is configured
 // `isConfigured` is false and every Firebase-dependent path degrades to the
 // same stub behaviour it had before Firebase existed (console-log pushes,
-// Cloudinary/local-disk uploads, dev OTP login).
+// local-disk uploads, dev OTP login).
 const path = require('node:path');
 const fs = require('node:fs');
 const env = require('../config/env');

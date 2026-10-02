@@ -3,15 +3,15 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { randomUUID } = require('node:crypto');
 
-// Local disk fallback for when Cloudinary isn't configured (e.g. local dev
-// without credentials). Kept on disk here so /uploads/:file can still serve
-// it - see upload.routes.js for the Cloudinary path.
+// Local disk fallback for when Firebase Storage isn't configured (e.g. local
+// dev without credentials). Kept on disk here so /uploads/:file can still
+// serve it - see upload.routes.js.
 const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // Files are buffered in memory rather than written straight to disk so the
-// same upload can go to Cloudinary (a stream upload) or, as a fallback, to
-// local disk - see upload.routes.js.
+// same upload can go to Firebase Storage or, as a fallback, to local disk -
+// see upload.routes.js.
 const storage = multer.memoryStorage();
 
 // Every accepted extension maps to the mimetypes we'll accept for it, so a

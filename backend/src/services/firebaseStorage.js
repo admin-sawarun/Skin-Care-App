@@ -1,7 +1,7 @@
 // Firebase Cloud Storage uploads - the preferred driver for case photos,
-// prescription attachments and avatars. Falls back to Cloudinary and then to
-// local disk (see upload.routes.js) whenever Firebase isn't configured -
-// same pattern as fcm.js/agora.js/cloudinary.js.
+// prescription attachments and avatars. Falls back to local disk (see
+// upload.routes.js) whenever Firebase isn't configured - same pattern as
+// fcm.js/agora.js.
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const firebase = require('./firebase');

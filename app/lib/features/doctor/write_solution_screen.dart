@@ -124,8 +124,10 @@ class _WriteSolutionScreenState extends ConsumerState<WriteSolutionScreen> {
             ),
           );
       if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
       context.pop();
       context.pop();
+      messenger.showSnackBar(const SnackBar(content: Text('Solution sent to patient')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));

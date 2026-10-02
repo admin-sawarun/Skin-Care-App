@@ -32,10 +32,6 @@ const env = {
 
   AGORA_APP_ID: process.env.AGORA_APP_ID || '',
   AGORA_APP_CERTIFICATE: process.env.AGORA_APP_CERTIFICATE || '',
-
-  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
-  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
-  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
 };
 
 if (env.NODE_ENV !== 'test' && !env.DATABASE_URL) {
