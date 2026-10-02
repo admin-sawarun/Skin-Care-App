@@ -1,4 +1,4 @@
-package com.skincare.app
+package com.lockandkey.skincare
 
 import io.flutter.embedding.android.FlutterActivity
 

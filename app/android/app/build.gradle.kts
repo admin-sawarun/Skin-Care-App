@@ -20,7 +20,7 @@ if (hasReleaseKeystore) {
 }
 
 android {
-    namespace = "com.skincare.app"
+    namespace = "com.lockandkey.skincare"
     // permission_handler_android 14.x hardcodes compileSdk 37; keep the app in
     // step with it (flutter.compileSdkVersion lags behind at 36).
     compileSdk = 37
@@ -38,7 +38,7 @@ android {
         // One app for both User and Doctor logins - see lib/main.dart and
         // lib/app_router.dart. The phone+OTP login screen alone decides which
         // role's screens to show, based on the server's response.
-        applicationId = "com.skincare.app"
+        applicationId = "com.lockandkey.skincare"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
