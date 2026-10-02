@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_avatar.dart';
 import '../../core/widgets/status_chip.dart';
+import '../../data/models/appointment_model.dart';
 import '../../data/models/case_model.dart';
 import '../../data/api/api_client.dart';
 import '../../data/api/api_repository.dart';
@@ -42,7 +43,12 @@ class DoctorDashboardScreen extends ConsumerWidget {
             c.solution != null &&
             _isToday(c.solution!.issuedAt))
         .length;
-    final todaysCalls = repo.appointments.where((a) => _isToday(a.scheduledAt)).toList()
+    // Only calls still joinable today - a completed/cancelled one has no
+    // business showing a "Join" button here (the Appointments tab is where
+    // past calls belong).
+    final todaysCalls = repo.appointments
+        .where((a) => _isToday(a.scheduledAt) && a.status != CallStatus.completed && a.status != CallStatus.cancelled)
+        .toList()
       ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
 
     return ListView(
