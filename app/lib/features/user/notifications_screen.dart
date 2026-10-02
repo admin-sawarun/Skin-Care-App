@@ -68,7 +68,9 @@ class NotificationsScreen extends ConsumerWidget {
                 final n = items[i];
                 return InkWell(
                   onTap: () {
-                    repo.markNotificationRead(n.id);
+                    // Best-effort: a failed read-receipt shouldn't block navigation
+                    // or surface an error for something this low-stakes.
+                    repo.markNotificationRead(n.id).catchError((_) {});
                     _openTarget(context, n);
                   },
                   borderRadius: BorderRadius.circular(14),

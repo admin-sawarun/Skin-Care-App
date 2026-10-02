@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../data/models/ticket_model.dart';
+import '../../data/api/api_client.dart';
 import '../../data/api/api_repository.dart';
 import 'ticket_detail_screen.dart';
 
@@ -21,13 +22,14 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     final subjectController = TextEditingController();
     final descController = TextEditingController();
     TicketPriority priority = TicketPriority.medium;
+    bool submitting = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
+      builder: (sheetContext) {
         return StatefulBuilder(builder: (context, setSheetState) {
           return Padding(
             padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
@@ -56,11 +58,25 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 const SizedBox(height: 18),
                 PrimaryButton(
                   label: 'Submit Ticket',
-                  onPressed: () {
-                    if (subjectController.text.trim().isEmpty) return;
-                    ref.read(apiRepositoryProvider).addTicket(subjectController.text.trim(), descController.text.trim(), priority);
-                    Navigator.pop(context);
-                  },
+                  loading: submitting,
+                  onPressed: submitting
+                      ? null
+                      : () async {
+                          if (subjectController.text.trim().isEmpty) return;
+                          setSheetState(() => submitting = true);
+                          final messenger = ScaffoldMessenger.of(this.context);
+                          try {
+                            await ref
+                                .read(apiRepositoryProvider)
+                                .addTicket(subjectController.text.trim(), descController.text.trim(), priority);
+                            if (!sheetContext.mounted) return;
+                            Navigator.pop(sheetContext);
+                            messenger.showSnackBar(const SnackBar(content: Text('Ticket submitted')));
+                          } catch (e) {
+                            setSheetState(() => submitting = false);
+                            messenger.showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+                          }
+                        },
                 ),
               ],
             ),

@@ -9,6 +9,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Field, { TextInput } from '../components/Field';
 import { Loading, ErrorMessage } from '../components/Feedback';
+import { toastSuccess, toastError } from '../store/toastStore';
 
 function emptyForm() {
   return { name: '', email: '', phone: '', specialization: '', experience: '', password: '' };
@@ -27,6 +28,8 @@ export default function Doctors() {
   const [formError, setFormError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
 
   function openCreate() {
     setForm(emptyForm());
@@ -58,6 +61,7 @@ export default function Doctors() {
         await api.post('/admin/doctors', payload);
       }
       setEditing(null);
+      toastSuccess(editing.id ? 'Doctor updated.' : 'Doctor added.');
       refetch();
     } catch (err) {
       setFormError(apiErrorMessage(err));
@@ -67,14 +71,30 @@ export default function Doctors() {
   }
 
   async function toggleAvailability(doctor) {
-    await api.put(`/admin/doctors/${doctor.id}`, { isAvailable: !doctor.isAvailable });
-    refetch();
+    setTogglingId(doctor.id);
+    try {
+      await api.put(`/admin/doctors/${doctor.id}`, { isAvailable: !doctor.isAvailable });
+      toastSuccess(doctor.isAvailable ? 'Marked unavailable.' : 'Marked available.');
+      refetch();
+    } catch (err) {
+      toastError(apiErrorMessage(err));
+    } finally {
+      setTogglingId(null);
+    }
   }
 
   async function handleDelete() {
-    await api.delete(`/admin/doctors/${deleting.id}`);
-    setDeleting(null);
-    refetch();
+    setDeleteBusy(true);
+    try {
+      await api.delete(`/admin/doctors/${deleting.id}`);
+      setDeleting(null);
+      toastSuccess('Doctor deleted.');
+      refetch();
+    } catch (err) {
+      toastError(apiErrorMessage(err));
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   // The list stays mounted while a search refetch is in flight, otherwise the
@@ -129,7 +149,9 @@ export default function Doctors() {
             </div>
             <div className="mt-4 flex gap-2">
               <Button variant="secondary" onClick={() => openEdit(doctor)}>Edit</Button>
-              <Button variant="secondary" onClick={() => toggleAvailability(doctor)}>{doctor.isAvailable ? 'Mark unavailable' : 'Mark available'}</Button>
+              <Button variant="secondary" onClick={() => toggleAvailability(doctor)} disabled={togglingId === doctor.id}>
+                {togglingId === doctor.id ? 'Updating…' : doctor.isAvailable ? 'Mark unavailable' : 'Mark available'}
+              </Button>
               <Button variant="danger" onClick={() => setDeleting(doctor)}>Delete</Button>
             </div>
           </Card>
@@ -163,6 +185,7 @@ export default function Doctors() {
         title="Delete doctor"
         description={`Delete ${deleting?.name}? This cannot be undone.`}
         confirmLabel="Delete"
+        loading={deleteBusy}
       />
     </div>
   );

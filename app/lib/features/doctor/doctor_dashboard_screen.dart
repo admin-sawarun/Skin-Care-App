@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_avatar.dart';
 import '../../core/widgets/status_chip.dart';
 import '../../data/models/case_model.dart';
+import '../../data/api/api_client.dart';
 import '../../data/api/api_repository.dart';
 import 'opened_cases_store.dart';
 
@@ -104,7 +105,14 @@ class DoctorDashboardScreen extends ConsumerWidget {
                       Switch(
                         value: repo.doctorAvailable,
                         activeThumbColor: AppColors.primary,
-                        onChanged: (v) => repo.toggleDoctorAvailability(v),
+                        onChanged: (v) async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          try {
+                            await repo.toggleDoctorAvailability(v);
+                          } catch (e) {
+                            messenger.showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+                          }
+                        },
                       ),
                     ],
                   ),

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../../lib/api';
+import { api, apiErrorMessage } from '../../lib/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import Card from '../../components/Card';
@@ -8,6 +8,7 @@ import Table from '../../components/Table';
 import Button from '../../components/Button';
 import { TextInput } from '../../components/Field';
 import { Loading, ErrorMessage } from '../../components/Feedback';
+import { toastSuccess, toastError } from '../../store/toastStore';
 
 export default function UserList() {
   const navigate = useNavigate();
@@ -18,11 +19,20 @@ export default function UserList() {
     () => api.get('/admin/users', { params: { page, limit: 20, ...(debouncedSearch && { search: debouncedSearch }) } }),
     [debouncedSearch, page],
   );
+  const [togglingId, setTogglingId] = useState(null);
 
   async function toggleBlock(user, e) {
     e.stopPropagation();
-    await api.put(`/admin/users/${user.id}`, { isBlocked: !user.isBlocked });
-    refetch();
+    setTogglingId(user.id);
+    try {
+      await api.put(`/admin/users/${user.id}`, { isBlocked: !user.isBlocked });
+      toastSuccess(user.isBlocked ? 'User unblocked.' : 'User blocked.');
+      refetch();
+    } catch (err) {
+      toastError(apiErrorMessage(err));
+    } finally {
+      setTogglingId(null);
+    }
   }
 
   return (
@@ -61,8 +71,8 @@ export default function UserList() {
                 { key: 'joined', header: 'Joined', render: (r) => new Date(r.createdAt).toLocaleDateString() },
                 { key: 'status', header: 'Status', render: (r) => (r.isBlocked ? <span className="text-red-600">Blocked</span> : <span className="text-green-600">Active</span>) },
                 { key: 'actions', header: '', render: (r) => (
-                  <Button variant={r.isBlocked ? 'secondary' : 'danger'} onClick={(e) => toggleBlock(r, e)}>
-                    {r.isBlocked ? 'Unblock' : 'Block'}
+                  <Button variant={r.isBlocked ? 'secondary' : 'danger'} onClick={(e) => toggleBlock(r, e)} disabled={togglingId === r.id}>
+                    {togglingId === r.id ? '…' : r.isBlocked ? 'Unblock' : 'Block'}
                   </Button>
                 ) },
               ]}

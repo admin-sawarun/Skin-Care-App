@@ -5,6 +5,7 @@ import Modal from './Modal';
 import Button from './Button';
 import { Select } from './Field';
 import { ErrorMessage } from './Feedback';
+import { toastSuccess } from '../store/toastStore';
 
 /// Shared "Assign Doctor" modal, used from the Dashboard's Recent Cases quick-assign
 /// action and the Cases table's per-row action.
@@ -24,6 +25,7 @@ export default function AssignDoctorModal({ caseId, open, onClose, onAssigned })
     try {
       await api.patch(`/admin/cases/${caseId}/assign`, { doctorId: selectedDoctor });
       setSelectedDoctor('');
+      toastSuccess('Doctor assigned.');
       onAssigned?.();
       onClose();
     } catch (err) {

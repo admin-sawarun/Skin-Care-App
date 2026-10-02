@@ -52,7 +52,13 @@ class PrescriptionScreen extends ConsumerWidget {
         ),
       ),
     );
-    await Printing.sharePdf(bytes: await doc.save(), filename: 'prescription-${c.caseNumber}.pdf');
+    try {
+      await Printing.sharePdf(bytes: await doc.save(), filename: 'prescription-${c.caseNumber}.pdf');
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not generate the PDF: $e')));
+      }
+    }
   }
 
   @override

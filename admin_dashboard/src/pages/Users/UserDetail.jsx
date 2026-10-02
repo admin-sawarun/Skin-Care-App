@@ -1,16 +1,19 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { api } from '../../lib/api';
+import { api, apiErrorMessage } from '../../lib/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import Card from '../../components/Card';
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import { Loading, ErrorMessage } from '../../components/Feedback';
+import { toastSuccess, toastError } from '../../store/toastStore';
 
 export default function UserDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, loading, error, refetch } = useApiQuery(() => api.get(`/admin/users/${id}`), [id]);
+  const [toggling, setToggling] = useState(false);
 
   if (loading) return <Loading />;
   if (error) return <ErrorMessage message={error} />;
@@ -18,8 +21,16 @@ export default function UserDetail() {
   const { user, cases } = data;
 
   async function toggleBlock() {
-    await api.put(`/admin/users/${id}`, { isBlocked: !user.isBlocked });
-    refetch();
+    setToggling(true);
+    try {
+      await api.put(`/admin/users/${id}`, { isBlocked: !user.isBlocked });
+      toastSuccess(user.isBlocked ? 'User unblocked.' : 'User blocked.');
+      refetch();
+    } catch (err) {
+      toastError(apiErrorMessage(err));
+    } finally {
+      setToggling(false);
+    }
   }
 
   return (
@@ -33,8 +44,8 @@ export default function UserDetail() {
             <div className="text-sm text-slate-500">{user.phone} · {user.email || 'no email'}</div>
             <div className="text-sm text-slate-500">{user.gender || '—'}, {user.age || '—'} years</div>
           </div>
-          <Button variant={user.isBlocked ? 'secondary' : 'danger'} onClick={toggleBlock}>
-            {user.isBlocked ? 'Unblock user' : 'Block user'}
+          <Button variant={user.isBlocked ? 'secondary' : 'danger'} onClick={toggleBlock} disabled={toggling}>
+            {toggling ? 'Please wait…' : user.isBlocked ? 'Unblock user' : 'Block user'}
           </Button>
         </div>
       </Card>

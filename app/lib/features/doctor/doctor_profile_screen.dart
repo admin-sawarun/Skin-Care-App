@@ -75,7 +75,14 @@ class DoctorProfileScreen extends ConsumerWidget {
             decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12)),
             child: SwitchListTile(
               value: repo.doctorAvailable,
-              onChanged: (v) => repo.toggleDoctorAvailability(v),
+              onChanged: (v) async {
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await repo.toggleDoctorAvailability(v);
+                } catch (e) {
+                  messenger.showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+                }
+              },
               activeThumbColor: AppColors.primary,
               contentPadding: EdgeInsets.zero,
               title: const Text('Available for new cases', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
@@ -273,6 +280,7 @@ class DoctorProfileScreen extends ConsumerWidget {
                       ? null
                       : () async {
                           setSheetState(() => saving = true);
+                          final messenger = ScaffoldMessenger.of(context);
                           try {
                             await repo.updateDoctorProfile(
                               name: nameController.text.trim(),
@@ -280,6 +288,7 @@ class DoctorProfileScreen extends ConsumerWidget {
                               experience: int.tryParse(experienceController.text.trim()),
                             );
                             if (sheetContext.mounted) Navigator.pop(sheetContext);
+                            messenger.showSnackBar(const SnackBar(content: Text('Profile updated')));
                           } catch (e) {
                             setSheetState(() => saving = false);
                             if (sheetContext.mounted) {

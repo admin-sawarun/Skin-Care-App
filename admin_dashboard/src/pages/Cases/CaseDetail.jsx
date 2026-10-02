@@ -9,6 +9,7 @@ import StatusBadge from '../../components/StatusBadge';
 import Modal from '../../components/Modal';
 import { Select } from '../../components/Field';
 import { Loading, ErrorMessage } from '../../components/Feedback';
+import { toastSuccess } from '../../store/toastStore';
 
 const NEXT_STATUSES = {
   PENDING: [],
@@ -43,6 +44,7 @@ export default function CaseDetail() {
       await api.patch(`/admin/cases/${id}/assign`, { doctorId: selectedDoctor });
       await refetch();
       setSelectedDoctor('');
+      toastSuccess('Doctor assigned.');
     } catch (err) {
       setActionError(apiErrorMessage(err));
     } finally {
@@ -58,6 +60,7 @@ export default function CaseDetail() {
       await api.patch(`/admin/cases/${id}/status`, { status: nextStatus });
       await refetch();
       setNextStatus('');
+      toastSuccess('Status updated.');
     } catch (err) {
       setActionError(apiErrorMessage(err));
     } finally {

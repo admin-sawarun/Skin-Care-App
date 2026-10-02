@@ -266,6 +266,7 @@ class ProfileScreen extends ConsumerWidget {
                         ? null
                         : () async {
                             setSheetState(() => saving = true);
+                            final messenger = ScaffoldMessenger.of(context);
                             try {
                               await repo.updateProfile(
                                 name: nameController.text.trim(),
@@ -274,6 +275,7 @@ class ProfileScreen extends ConsumerWidget {
                                 age: int.tryParse(ageController.text.trim()),
                               );
                               if (sheetContext.mounted) Navigator.pop(sheetContext);
+                              messenger.showSnackBar(const SnackBar(content: Text('Profile updated')));
                             } catch (e) {
                               setSheetState(() => saving = false);
                               if (sheetContext.mounted) {
