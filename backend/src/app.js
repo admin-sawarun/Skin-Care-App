@@ -49,6 +49,12 @@ app.get('/privacy-policy', (req, res) => {
 app.get('/terms-and-conditions', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/terms-and-conditions.html'));
 });
+app.get('/refund-policy', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/refund-policy.html'));
+});
+app.get('/about-us', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/about-us.html'));
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
