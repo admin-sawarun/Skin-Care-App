@@ -46,6 +46,7 @@
     margin-bottom: 16px;
   }
   input:focus, textarea:focus { outline: 2px solid #0A7C6E; border-color: #0A7C6E; }
+  input:disabled { background: #F1F5F9; color: #64748B; }
   textarea { resize: vertical; min-height: 70px; }
   button {
     width: 100%;
@@ -59,9 +60,35 @@
     cursor: pointer;
   }
   button:disabled { opacity: 0.6; cursor: default; }
+  .link-btn {
+    width: auto;
+    background: none;
+    color: #0A7C6E;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0;
+    text-decoration: underline;
+    margin-top: -8px;
+    margin-bottom: 16px;
+  }
+  .verified {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ECFDF5;
+    border: 1px solid #BBF7D0;
+    color: #15803D;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
   .msg { margin-top: 16px; padding: 12px 14px; border-radius: 8px; font-size: 13.5px; display: none; }
   .msg.success { display: block; background: #ECFDF5; color: #15803D; border: 1px solid #BBF7D0; }
   .msg.error { display: block; background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+  .step { display: none; }
+  .step.active { display: block; }
 </style>
 </head>
 <body>
@@ -77,56 +104,158 @@
         <li>Chat messages and support tickets</li>
         <li>Appointment/video call history</li>
       </ul>
-      This cannot be undone. Requests are reviewed and completed within a few business days.
+      This cannot be undone. We verify your phone number with an OTP first, so only the owner of an
+      account can request its deletion.
     </div>
 
-    <form id="deleteForm">
+    <!-- Step 1: enter phone, send OTP -->
+    <div id="step1" class="step active">
       <label for="phone">Phone number used with the app</label>
-      <input id="phone" name="phone" type="tel" placeholder="+91XXXXXXXXXX" required />
+      <input id="phone" type="tel" placeholder="+91XXXXXXXXXX" required />
+      <div id="recaptcha-container"></div>
+      <button id="sendOtpBtn" type="button">Send OTP</button>
+    </div>
 
+    <!-- Step 2: enter OTP, verify -->
+    <div id="step2" class="step">
+      <label for="otp">Enter the 6-digit code sent to your phone</label>
+      <input id="otp" type="tel" inputmode="numeric" maxlength="6" placeholder="123456" required />
+      <button id="verifyOtpBtn" type="button">Verify OTP</button>
+      <button id="changeNumberBtn" type="button" class="link-btn">Use a different number</button>
+    </div>
+
+    <!-- Step 3: verified, confirm deletion -->
+    <form id="deleteForm" class="step">
+      <div class="verified">&#10003; Phone number verified</div>
       <label for="reason">Reason (optional)</label>
-      <textarea id="reason" name="reason" placeholder="Let us know why you're leaving (optional)"></textarea>
-
+      <textarea id="reason" placeholder="Let us know why you're leaving (optional)"></textarea>
       <button id="submitBtn" type="submit">Request Account Deletion</button>
     </form>
 
     <div id="msg" class="msg"></div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script>
-    const form = document.getElementById('deleteForm');
-    const btn = document.getElementById('submitBtn');
-    const msg = document.getElementById('msg');
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsK8vYzftCwZlsC-fCSsae3Y1RJmtYmj0",
+      authDomain: "savarun-app-b775b.firebaseapp.com",
+      projectId: "savarun-app-b775b",
+      storageBucket: "savarun-app-b775b.firebasestorage.app",
+      messagingSenderId: "967966230694",
+      appId: "1:967966230694:web:0961bcb202f924ac160c67",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-    form.addEventListener('submit', async (e) => {
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const deleteForm = document.getElementById('deleteForm');
+    const msg = document.getElementById('msg');
+    const phoneInput = document.getElementById('phone');
+    const otpInput = document.getElementById('otp');
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const changeNumberBtn = document.getElementById('changeNumberBtn');
+    const submitBtn = document.getElementById('submitBtn');
+
+    let confirmationResult = null;
+    let verifiedIdToken = null;
+
+    function showStep(step) {
+      [step1, step2, deleteForm].forEach((el) => el.classList.remove('active'));
+      step.classList.add('active');
+    }
+
+    function showMsg(type, text) {
+      msg.className = `msg ${type}`;
+      msg.textContent = text;
+    }
+
+    function normalizePhone(raw) {
+      const trimmed = raw.trim();
+      if (trimmed.startsWith('+')) return trimmed;
+      const digits = trimmed.replace(/\D/g, '');
+      return digits.length === 10 ? `+91${digits}` : `+${digits}`;
+    }
+
+    const recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+
+    sendOtpBtn.addEventListener('click', async () => {
+      msg.className = 'msg';
+      const phone = normalizePhone(phoneInput.value);
+      if (!/^\+\d{8,15}$/.test(phone)) {
+        showMsg('error', 'Enter a valid phone number.');
+        return;
+      }
+      sendOtpBtn.disabled = true;
+      sendOtpBtn.textContent = 'Sending…';
+      try {
+        confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
+        showStep(step2);
+        otpInput.focus();
+      } catch (err) {
+        showMsg('error', err.message || 'Could not send the OTP. Please try again.');
+        recaptchaVerifier.render().then((widgetId) => grecaptcha.reset(widgetId)).catch(() => {});
+      } finally {
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.textContent = 'Send OTP';
+      }
+    });
+
+    verifyOtpBtn.addEventListener('click', async () => {
+      msg.className = 'msg';
+      const code = otpInput.value.trim();
+      if (!/^\d{6}$/.test(code)) {
+        showMsg('error', 'Enter the 6-digit code.');
+        return;
+      }
+      verifyOtpBtn.disabled = true;
+      verifyOtpBtn.textContent = 'Verifying…';
+      try {
+        const result = await confirmationResult.confirm(code);
+        verifiedIdToken = await result.user.getIdToken();
+        showStep(deleteForm);
+      } catch (err) {
+        showMsg('error', 'Incorrect or expired code. Please try again.');
+      } finally {
+        verifyOtpBtn.disabled = false;
+        verifyOtpBtn.textContent = 'Verify OTP';
+      }
+    });
+
+    changeNumberBtn.addEventListener('click', () => {
+      msg.className = 'msg';
+      otpInput.value = '';
+      confirmationResult = null;
+      showStep(step1);
+    });
+
+    deleteForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       msg.className = 'msg';
-      msg.textContent = '';
-      btn.disabled = true;
-      btn.textContent = 'Submitting…';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting…';
 
-      const phone = document.getElementById('phone').value.trim();
       const reason = document.getElementById('reason').value.trim();
 
       try {
         const res = await fetch('/api/public/account-deletion-requests', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, reason: reason || undefined }),
+          body: JSON.stringify({ idToken: verifiedIdToken, reason: reason || undefined }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
 
-        msg.className = 'msg success';
-        msg.textContent = "Request received. We'll delete your account and data within a few business days.";
-        form.reset();
-        form.style.display = 'none';
+        showMsg('success', "Request received. We'll delete your account and data within a few business days.");
+        deleteForm.style.display = 'none';
       } catch (err) {
-        msg.className = 'msg error';
-        msg.textContent = err.message || 'Something went wrong. Please try again.';
+        showMsg('error', err.message || 'Something went wrong. Please try again.');
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Request Account Deletion';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Request Account Deletion';
       }
     });
   </script>

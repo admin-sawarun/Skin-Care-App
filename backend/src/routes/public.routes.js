@@ -8,10 +8,7 @@ const publicController = require('../controllers/public.controller');
 const router = express.Router();
 
 const accountDeletionRequestSchema = z.object({
-  phone: z
-    .string()
-    .trim()
-    .regex(/^\+?\d{8,15}$/, 'Enter a valid phone number'),
+  idToken: z.string().min(20),
   reason: z.string().trim().max(500).optional(),
 });
 
