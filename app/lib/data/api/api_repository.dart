@@ -223,12 +223,38 @@ class ApiRepository extends ChangeNotifier {
 
   // ------- Mutations (mirror the REST endpoints) -------
 
+  /// Creates a Razorpay order for the ₹399 case-submission fee. The Flutter
+  /// checkout screen opens Razorpay Checkout with [orderId]/[keyId], then
+  /// calls [verifyPayment] once the user pays, before finally [submitCase].
+  Future<Map<String, dynamic>> createPaymentOrder() async {
+    final res = await _dio.post('/users/payments/order');
+    return res.data as Map<String, dynamic>;
+  }
+
+  /// Verifies the signature Razorpay Checkout hands back and flips the
+  /// Payment to PAID server-side. Throws if the signature doesn't check out.
+  /// [razorpayPaymentId] is Razorpay's own payment id (distinct from our
+  /// backend Payment row's id, which [submitCase] takes separately).
+  Future<void> verifyPayment({
+    required String orderId,
+    required String razorpayPaymentId,
+    required String signature,
+  }) async {
+    await _dio.post('/users/payments/verify', data: {
+      'razorpay_order_id': orderId,
+      'razorpay_payment_id': razorpayPaymentId,
+      'razorpay_signature': signature,
+    });
+  }
+
   Future<CaseModel> submitCase({
+    required String paymentId,
     required Map<String, dynamic> answers,
     List<String> videos = const [],
   }) async {
     final res = await _dio.post('/users/cases', data: {
       'questionFlowId': _activeFlowId,
+      'paymentId': paymentId,
       'answers': answers,
       if (videos.isNotEmpty) 'videos': videos,
     });

@@ -1,15 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../data/models/question_model.dart';
 import '../../data/api/api_client.dart';
 import '../../data/api/api_repository.dart';
+
+/// Case-submission fee shown in the UI - must match the backend's
+/// CASE_SUBMISSION_FEE_PAISE (see backend/src/config/env.js).
+const _caseSubmissionFeeRupees = 399;
 
 IconData _iconFor(String key) {
   switch (key) {
@@ -68,6 +74,45 @@ class _SubmitProblemScreenState extends ConsumerState<SubmitProblemScreen> {
   int _photoCount = 0;
   bool _summary = false;
   bool _submitting = false;
+
+  late final Razorpay _razorpay;
+  Completer<PaymentSuccessResponse>? _paymentCompleter;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay()
+      ..on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse r) => _paymentCompleter?.complete(r))
+      ..on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse r) => _paymentCompleter?.completeError(r))
+      ..on(Razorpay.EVENT_EXTERNAL_WALLET, (ExternalWalletResponse r) => _paymentCompleter?.completeError(
+            PaymentFailureResponse(Razorpay.PAYMENT_CANCELLED, 'External wallet (${r.walletName}) is not supported', null),
+          ));
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  /// Opens Razorpay Checkout for the given order and waits for the user to
+  /// finish paying (or cancel/fail). The SDK is callback-based, not
+  /// Future-based, so a Completer bridges it into the rest of this
+  /// async/await flow.
+  Future<PaymentSuccessResponse> _openCheckout(Map<String, dynamic> order) {
+    _paymentCompleter = Completer<PaymentSuccessResponse>();
+    final user = ref.read(apiRepositoryProvider).currentUser;
+    _razorpay.open({
+      'key': order['keyId'],
+      'amount': order['amount'],
+      'currency': order['currency'],
+      'order_id': order['orderId'],
+      'name': 'Lock and Key Skin Care',
+      'description': 'Case submission fee',
+      'prefill': {'contact': user.phone, 'email': user.email},
+    });
+    return _paymentCompleter!.future;
+  }
 
   void _next(List<QuestionModel> questions) {
     if (_index < questions.length - 1) {
@@ -231,15 +276,35 @@ class _SubmitProblemScreenState extends ConsumerState<SubmitProblemScreen> {
       if (!empty) answers[q.id] = raw;
     }
     try {
-      await ref.read(apiRepositoryProvider).submitCase(
-            answers: answers,
-            videos: [for (final v in _videos) v.url],
-          );
+      final repo = ref.read(apiRepositoryProvider);
+
+      // Pay the ₹399 submission fee before the case is created - the
+      // backend refuses to create a case without a PAID Payment (see
+      // user.controller.js's createCase).
+      final order = await repo.createPaymentOrder();
+      final paymentResult = await _openCheckout(order);
+      await repo.verifyPayment(
+        orderId: paymentResult.orderId!,
+        razorpayPaymentId: paymentResult.paymentId!,
+        signature: paymentResult.signature!,
+      );
+
+      await repo.submitCase(
+        paymentId: order['paymentId'] as String,
+        answers: answers,
+        videos: [for (final v in _videos) v.url],
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Case submitted! A doctor will review it shortly.')),
       );
       context.pushReplacement('/cases');
+    } on PaymentFailureResponse catch (e) {
+      if (!mounted) return;
+      final message = e.code == Razorpay.PAYMENT_CANCELLED
+          ? 'Payment was cancelled'
+          : (e.message?.isNotEmpty == true ? e.message! : 'Payment failed. Please try again.');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
@@ -509,8 +574,25 @@ class _PatientDetailsSheetState extends ConsumerState<_PatientDetailsSheet> {
               const SizedBox(height: 12),
               Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 12.5)),
             ],
-            const SizedBox(height: 22),
-            PrimaryButton(label: 'Confirm & Submit Case', icon: Icons.send_rounded, loading: _saving, onPressed: _save),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                children: [
+                  const Icon(Icons.payments_rounded, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text("You'll be asked to pay the consultation fee next.",
+                        style: TextStyle(fontSize: 12.5, color: AppColors.textDark)),
+                  ),
+                  Text('₹$_caseSubmissionFeeRupees',
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.primary)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            PrimaryButton(label: 'Confirm & Pay ₹$_caseSubmissionFeeRupees', icon: Icons.send_rounded, loading: _saving, onPressed: _save),
           ],
         ),
       ),

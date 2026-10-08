@@ -32,6 +32,12 @@ const env = {
 
   AGORA_APP_ID: process.env.AGORA_APP_ID || '',
   AGORA_APP_CERTIFICATE: process.env.AGORA_APP_CERTIFICATE || '',
+
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
+  // Case-submission fee, in paise (smallest currency unit Razorpay expects).
+  // 39900 paise = ₹399.
+  CASE_SUBMISSION_FEE_PAISE: parseInt(process.env.CASE_SUBMISSION_FEE_PAISE, 10) || 39900,
 };
 
 if (env.NODE_ENV !== 'test' && !env.DATABASE_URL) {

@@ -117,12 +117,20 @@ const listCases = asyncHandler(async (req, res) => {
 
 // POST /api/users/cases
 const createCase = asyncHandler(async (req, res) => {
-  const { questionFlowId, answers, photos, videos } = req.body;
+  const { questionFlowId, paymentId, answers, photos, videos } = req.body;
 
   // The doctor needs the patient's age and gender to review a case.
   if (!req.user.age || !req.user.gender) {
     throw ApiError.badRequest('Please add your age and gender before submitting a case');
   }
+
+  // The ₹399 submission fee must already be paid - and not already spent on
+  // another case - before a case can be created. See payment.controller.js
+  // for how a Payment flips from CREATED to PAID.
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId }, include: { case: true } });
+  if (!payment || payment.userId !== req.user.id) throw ApiError.badRequest('Invalid paymentId');
+  if (payment.status !== 'PAID') throw ApiError.badRequest('Payment has not been completed yet');
+  if (payment.case) throw ApiError.badRequest('This payment has already been used for another case');
 
   const flow = await prisma.questionFlow.findUnique({ where: { id: questionFlowId } });
   if (!flow) throw ApiError.badRequest('Invalid questionFlowId');
@@ -142,6 +150,7 @@ const createCase = asyncHandler(async (req, res) => {
     data: {
       userId: req.user.id,
       questionFlowId,
+      paymentId,
       answers,
       photos: uploadedPhotos,
       videos: uploadedVideos,

@@ -3,6 +3,7 @@ const { z } = require('zod');
 const validate = require('../middleware/validate');
 const { authenticate, requireUser } = require('../middleware/auth');
 const userController = require('../controllers/user.controller');
+const paymentController = require('../controllers/payment.controller');
 
 const router = express.Router();
 
@@ -31,9 +32,16 @@ const listCasesQuerySchema = z.object({
 
 const createCaseSchema = z.object({
   questionFlowId: z.string().min(1),
+  paymentId: z.string().min(1),
   answers: z.any(),
   photos: z.array(z.string().url()).max(5).optional(),
   videos: z.array(z.string().url()).max(2).optional(),
+});
+
+const verifyPaymentSchema = z.object({
+  razorpay_order_id: z.string().min(1),
+  razorpay_payment_id: z.string().min(1),
+  razorpay_signature: z.string().min(1),
 });
 
 const messageSchema = z
@@ -64,6 +72,9 @@ router.post('/device-token', validate({ body: deviceTokenSchema }), userControll
 router.delete('/device-token', validate({ body: deviceTokenSchema }), userController.deleteDeviceToken);
 router.get('/question-flow', userController.getActiveQuestionFlow);
 router.get('/doctors', userController.listDoctors);
+
+router.post('/payments/order', paymentController.createOrder);
+router.post('/payments/verify', validate({ body: verifyPaymentSchema }), paymentController.verifyPayment);
 
 router.get('/cases', validate({ query: listCasesQuerySchema }), userController.listCases);
 router.post('/cases', validate({ body: createCaseSchema }), userController.createCase);

@@ -28,6 +28,12 @@ enum SenderType {
   DOCTOR
 }
 
+enum PaymentStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
 enum NotificationUserType {
   USER
   DOCTOR
@@ -79,9 +85,10 @@ model User {
   isBlocked Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  cases   Case[]
-  tickets Ticket[]
-  ratings Rating[]
+  cases    Case[]
+  tickets  Ticket[]
+  ratings  Rating[]
+  payments Payment[]
 }
 
 model Doctor {
@@ -117,6 +124,9 @@ model Case {
   userId         String
   doctorId       String?
   questionFlowId String
+  // The paid Payment that unlocked this submission - required so a single
+  // ₹399 payment can't be reused across multiple cases (unique constraint).
+  paymentId      String?    @unique
   answers        Json
   status         CaseStatus @default(PENDING)
   photos         String[]
@@ -130,6 +140,7 @@ model Case {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctor       Doctor?      @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   questionFlow QuestionFlow @relation(fields: [questionFlowId], references: [id])
+  payment      Payment?     @relation(fields: [paymentId], references: [id])
 
   messages      Message[]
   solution      Solution?
@@ -140,6 +151,28 @@ model Case {
   @@index([userId])
   @@index([doctorId])
   @@index([status])
+}
+
+// A Razorpay order for the ₹399 case-submission fee. Created in CREATED
+// status when the app asks for a checkout order, flipped to PAID once
+// POST /api/users/payments/verify confirms the signature. A case can only
+// be created against a Payment that is PAID and not already linked to
+// another case (see the unique Case.paymentId above).
+model Payment {
+  id                 String        @id @default(uuid())
+  userId             String
+  razorpayOrderId    String        @unique
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+  amount             Int
+  status             PaymentStatus @default(CREATED)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  case Case?
+
+  @@index([userId])
 }
 
 model CaseStatusHistory {
