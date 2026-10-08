@@ -35,6 +35,12 @@ app.get('/health', (req, res) => {
 
 app.use('/uploads', express.static(UPLOAD_DIR));
 
+// Public-facing homepage - linked from Razorpay/Play Store/App Store listings
+// as the business's website.
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
 // Google Play requires an account-deletion page reachable without logging
 // into the app - see routes/public.routes.js for the form's endpoint.
 app.get('/account-deletion', (req, res) => {
