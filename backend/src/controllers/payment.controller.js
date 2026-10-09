@@ -75,4 +75,19 @@ const verifyPayment = asyncHandler(async (req, res) => {
   res.json({ paymentId: updated.id, status: updated.status });
 });
 
-module.exports = { createOrder, verifyPayment };
+// GET /api/users/payments
+// The signed-in patient's own payment history - amount, status, and
+// whether the case it paid for was ever submitted (a payment can exist
+// without a case if checkout succeeded but the case-create call never
+// landed, e.g. the app closed mid-flow).
+const listMyPayments = asyncHandler(async (req, res) => {
+  const payments = await prisma.payment.findMany({
+    where: { userId: req.user.id },
+    orderBy: { createdAt: 'desc' },
+    include: { case: { select: { id: true, status: true } } },
+  });
+
+  res.json({ data: payments });
+});
+
+module.exports = { createOrder, verifyPayment, listMyPayments };

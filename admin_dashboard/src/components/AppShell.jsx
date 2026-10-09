@@ -6,6 +6,7 @@ import {
   BellRing,
   BriefcaseMedical,
   ChevronRight,
+  IndianRupee,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
@@ -27,6 +28,7 @@ import ToastContainer from './ToastContainer';
 const NAV = [
   { to: '/', label: 'Dashboard', end: true, icon: LayoutDashboard },
   { to: '/cases', label: 'Cases', icon: BriefcaseMedical },
+  { to: '/payments', label: 'Payments', icon: IndianRupee },
   { to: '/question-builder', label: 'Question Builder', icon: Workflow },
   { to: '/doctors', label: 'Doctors', icon: Stethoscope },
   { to: '/users', label: 'Users', icon: Users },

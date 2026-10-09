@@ -86,6 +86,15 @@ export default function CaseList() {
                 { key: 'user', header: 'User', render: (r) => r.user?.name },
                 { key: 'phone', header: 'Phone', render: (r) => r.user?.phone },
                 { key: 'doctor', header: 'Doctor', render: (r) => r.doctor?.name || '—' },
+                {
+                  key: 'payment',
+                  header: 'Payment',
+                  render: (r) => r.payment ? (
+                    <span className={r.payment.status === 'PAID' ? 'text-green-700' : 'text-red-700'}>
+                      ₹{(r.payment.amount / 100).toFixed(0)} · {r.payment.status}
+                    </span>
+                  ) : '—',
+                },
                 { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
                 { key: 'createdAt', header: 'Created', render: (r) => new Date(r.createdAt).toLocaleDateString() },
                 {

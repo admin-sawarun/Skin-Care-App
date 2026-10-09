@@ -72,6 +72,13 @@ const paginationQuerySchema = z.object({
   limit: z.string().optional(),
 });
 
+const listPaymentsQuerySchema = z.object({
+  status: z.enum(['CREATED', 'PAID', 'FAILED', 'REFUNDED']).optional(),
+  search: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+});
+
 const createDoctorSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
@@ -143,6 +150,10 @@ router.get('/cases/export', validate({ query: exportCasesQuerySchema }), adminCo
 router.get('/cases/:id', adminController.getCaseById);
 router.patch('/cases/:id/assign', validate({ body: assignCaseSchema }), adminController.assignCase);
 router.patch('/cases/:id/status', validate({ body: updateCaseStatusSchema }), adminController.updateCaseStatus);
+
+// Payments
+router.get('/payments', validate({ query: listPaymentsQuerySchema }), adminController.listPayments);
+router.post('/payments/:id/refund', adminController.refundPayment);
 
 // Doctors
 router.get('/doctors', validate({ query: paginationQuerySchema }), adminController.listDoctors);

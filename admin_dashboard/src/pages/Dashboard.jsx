@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Clock, FileText, Stethoscope, UserPlus, Users } from 'lucide-react';
+import { Clock, FileText, IndianRupee, Stethoscope, UserPlus, Users } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useSocketEvent } from '../lib/socket';
@@ -20,19 +20,24 @@ const STAT_TONES = {
   rose: { icon: 'bg-rose-100 text-rose-600' },
 };
 
-function StatCard({ label, value, icon: Icon, tone = 'teal' }) {
-  return (
-    <Card>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-          <h3 className="mt-3 text-3xl font-bold text-slate-900">{value ?? '—'}</h3>
-        </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${STAT_TONES[tone].icon}`}>
-          <Icon className="h-5 w-5" />
-        </div>
+function StatCard({ label, value, icon: Icon, tone = 'teal', to }) {
+  const content = (
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+        <h3 className="mt-3 text-3xl font-bold text-slate-900">{value ?? '—'}</h3>
       </div>
-    </Card>
+      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${STAT_TONES[tone].icon}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+    </div>
+  );
+  return to ? (
+    <Link to={to}>
+      <Card className="transition hover:border-brand-teal/30 hover:shadow-md">{content}</Card>
+    </Link>
+  ) : (
+    <Card>{content}</Card>
   );
 }
 
@@ -64,7 +69,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard
+          label="Total revenue"
+          value={`₹${data.totals.totalRevenue.toLocaleString('en-IN')}`}
+          icon={IndianRupee}
+          tone="green"
+          to="/payments"
+        />
         <StatCard label="Total users" value={data.totals.totalUsers} icon={Users} tone="teal" />
         <StatCard label="Total doctors" value={data.totals.totalDoctors} icon={Stethoscope} tone="green" />
         <StatCard label="Total cases" value={data.totals.totalCases} icon={FileText} tone="amber" />

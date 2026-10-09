@@ -79,6 +79,7 @@ class ProfileScreen extends ConsumerWidget {
           _ProfileTile(icon: Icons.person_outline_rounded, label: 'Personal Information', onTap: () => _editProfileSheet(context, ref)),
           _ProfileTile(icon: Icons.folder_outlined, label: 'My Cases', onTap: () => context.push('/cases')),
           _ProfileTile(icon: Icons.calendar_today_outlined, label: 'Appointments', onTap: () => context.push('/appointments')),
+          _ProfileTile(icon: Icons.receipt_long_outlined, label: 'Payment History', onTap: () => context.push('/payment-history')),
           _ProfileTile(icon: Icons.notifications_none_rounded, label: 'Notifications', onTap: () => context.push('/notifications')),
           _ProfileTile(icon: Icons.support_agent_rounded, label: 'Help & Support', onTap: () => context.push('/tickets')),
           const SizedBox(height: 18),

@@ -21,6 +21,7 @@ import 'features/user/my_cases_screen.dart';
 import 'features/user/notifications_screen.dart';
 import 'features/user/onboarding_screen.dart';
 import 'features/user/otp_screen.dart';
+import 'features/user/payment_history_screen.dart';
 import 'features/user/prescription_screen.dart';
 import 'features/user/splash_screen.dart';
 import 'features/user/submit_problem_screen.dart';
@@ -90,6 +91,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => PrescriptionScreen(caseId: state.pathParameters['caseId']!),
       ),
       GoRoute(path: '/appointments', builder: (context, state) => const AppointmentsScreen()),
+      GoRoute(path: '/payment-history', builder: (context, state) => const PaymentHistoryScreen()),
       GoRoute(path: '/notifications', builder: (context, state) => const NotificationsScreen()),
       GoRoute(path: '/tickets', builder: (context, state) => const TicketScreen()),
       GoRoute(

@@ -32,6 +32,7 @@ enum PaymentStatus {
   CREATED
   PAID
   FAILED
+  REFUNDED
 }
 
 enum NotificationUserType {
@@ -164,6 +165,7 @@ model Payment {
   razorpayOrderId    String        @unique
   razorpayPaymentId  String?
   razorpaySignature  String?
+  razorpayRefundId   String?
   amount             Int
   status             PaymentStatus @default(CREATED)
   createdAt          DateTime      @default(now())

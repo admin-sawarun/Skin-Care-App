@@ -89,6 +89,20 @@ export default function CaseDetail() {
             <div className="text-slate-400">{caseRecord.user?.gender || '—'}, {caseRecord.user?.age || '—'}</div>
           </div>
 
+          {caseRecord.payment && (
+            <>
+              <h3 className="mb-3 mt-6 text-sm font-semibold text-slate-600">Payment</h3>
+              <div className="text-sm text-slate-700">
+                ₹{(caseRecord.payment.amount / 100).toFixed(2)}
+                <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  caseRecord.payment.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {caseRecord.payment.status}
+                </span>
+              </div>
+            </>
+          )}
+
           <h3 className="mb-3 mt-6 text-sm font-semibold text-slate-600">Answers</h3>
           <div className="flex flex-col gap-3">
             {caseRecord.questionFlow?.questions?.map((q) => (

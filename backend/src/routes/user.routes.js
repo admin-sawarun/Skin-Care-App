@@ -75,6 +75,7 @@ router.get('/doctors', userController.listDoctors);
 
 router.post('/payments/order', paymentController.createOrder);
 router.post('/payments/verify', validate({ body: verifyPaymentSchema }), paymentController.verifyPayment);
+router.get('/payments', paymentController.listMyPayments);
 
 router.get('/cases', validate({ query: listCasesQuerySchema }), userController.listCases);
 router.post('/cases', validate({ body: createCaseSchema }), userController.createCase);

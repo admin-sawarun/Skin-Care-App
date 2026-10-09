@@ -10,6 +10,7 @@ import '../models/case_model.dart';
 import '../models/doctor_model.dart';
 import '../models/message_model.dart';
 import '../models/notification_model.dart';
+import '../models/payment_model.dart';
 import '../models/question_model.dart';
 import '../models/rating_model.dart';
 import '../models/solution_model.dart';
@@ -245,6 +246,12 @@ class ApiRepository extends ChangeNotifier {
       'razorpay_payment_id': razorpayPaymentId,
       'razorpay_signature': signature,
     });
+  }
+
+  /// The signed-in patient's own payment history, newest first.
+  Future<List<PaymentModel>> fetchMyPayments() async {
+    final res = await _dio.get('/users/payments');
+    return ((res.data['data'] as List)).map((p) => PaymentModel.fromJson(p as Map<String, dynamic>)).toList();
   }
 
   Future<CaseModel> submitCase({

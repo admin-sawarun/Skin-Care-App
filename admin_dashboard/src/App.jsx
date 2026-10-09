@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CaseList from './pages/Cases/CaseList';
 import CaseDetail from './pages/Cases/CaseDetail';
+import Payments from './pages/Payments';
 import QuestionBuilder from './pages/QuestionBuilder';
 import Doctors from './pages/Doctors';
 import UserList from './pages/Users/UserList';
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/cases" element={<CaseList />} />
           <Route path="/cases/:id" element={<CaseDetail />} />
+          <Route path="/payments" element={<Payments />} />
           <Route path="/question-builder" element={<QuestionBuilder />} />
           <Route path="/doctors" element={<Doctors />} />
           <Route path="/users" element={<UserList />} />

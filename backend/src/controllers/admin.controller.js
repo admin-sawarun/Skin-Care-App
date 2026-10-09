@@ -11,6 +11,7 @@ const { toCsv } = require('../utils/csv');
 const { buildCaseFilter } = require('../utils/caseFilter');
 const { fillMonthlySeries } = require('../utils/analytics');
 const { deleteUserAccount } = require('../services/accountDeletion');
+const { razorpay, isConfigured: razorpayConfigured } = require('../services/razorpay');
 
 const SALT_ROUNDS = 10;
 
@@ -107,6 +108,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
     totalCases,
     totalTickets,
     pendingCases,
+    revenueAgg,
     statusGroups,
     casesPerMonth,
     weeklyNewUsers,
@@ -116,6 +118,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
     prisma.case.count({ where: hasDateFilter ? { createdAt: dateFilter } : undefined }),
     prisma.ticket.count(),
     prisma.case.count({ where: { status: 'PENDING' } }),
+    prisma.payment.aggregate({ where: { status: 'PAID' }, _sum: { amount: true } }),
     prisma.case.groupBy({ by: ['status'], _count: { _all: true } }),
     prisma.$queryRaw`
       SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') as month,
@@ -141,7 +144,15 @@ const getAnalytics = asyncHandler(async (req, res) => {
   }, {});
 
   res.json({
-    totals: { totalUsers, totalDoctors, totalCases, totalTickets, pendingCases },
+    totals: {
+      totalUsers,
+      totalDoctors,
+      totalCases,
+      totalTickets,
+      pendingCases,
+      // Paid revenue in rupees (amount is stored in paise).
+      totalRevenue: (revenueAgg._sum.amount || 0) / 100,
+    },
     casesPerMonth: fillMonthlySeries(casesPerMonth, sixMonthsAgo, 6),
     statusDistribution,
     weeklyNewUsers,
@@ -167,6 +178,7 @@ const listCases = asyncHandler(async (req, res) => {
       include: {
         user: { select: { id: true, name: true, phone: true, avatar: true } },
         doctor: { select: { id: true, name: true, specialization: true } },
+        payment: { select: { amount: true, status: true } },
       },
     }),
     prisma.case.count({ where }),
@@ -186,16 +198,19 @@ const exportCases = asyncHandler(async (req, res) => {
     include: {
       user: { select: { name: true, phone: true } },
       doctor: { select: { name: true } },
+      payment: { select: { amount: true, status: true } },
     },
   });
 
-  const header = ['Case ID', 'User', 'Phone', 'Doctor', 'Status', 'Created At'];
+  const header = ['Case ID', 'User', 'Phone', 'Doctor', 'Status', 'Payment (Rs)', 'Payment Status', 'Created At'];
   const rows = cases.map((c) => [
     c.id,
     c.user?.name,
     c.user?.phone,
     c.doctor?.name || '',
     c.status,
+    c.payment ? (c.payment.amount / 100).toFixed(2) : '',
+    c.payment?.status || '',
     c.createdAt.toISOString(),
   ]);
   const csv = toCsv(header, rows);
@@ -216,6 +231,7 @@ const getCaseById = asyncHandler(async (req, res) => {
       solution: true,
       videoCalls: true,
       statusHistory: { orderBy: { createdAt: 'asc' } },
+      payment: { select: { amount: true, status: true, razorpayPaymentId: true, createdAt: true } },
       _count: { select: { messages: true } },
     },
   });
@@ -857,7 +873,80 @@ const completeAccountDeletionRequest = asyncHandler(async (req, res) => {
   res.json({ accountDeletionRequest: updated, userDeleted: Boolean(user) });
 });
 
+// ---------------------------------------------------------------------------
+// Payments
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/payments?status&search&page&limit
+// Full payments ledger: who paid, how much, whether their case has been
+// solved yet, and which doctor it was assigned to - everything the admin
+// needs to answer "did we get paid for this" and "does this need a refund"
+// without digging through Razorpay's own dashboard.
+const listPayments = asyncHandler(async (req, res) => {
+  const { status, search, page: pageQuery, limit: limitQuery } = req.query;
+  const { page, limit, skip, take } = getPagination({ page: pageQuery, limit: limitQuery });
+
+  const where = {
+    ...(status && { status }),
+    ...(search && {
+      user: {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+        ],
+      },
+    }),
+  };
+
+  const [data, total] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, name: true, phone: true } },
+        case: {
+          select: {
+            id: true,
+            status: true,
+            doctor: { select: { id: true, name: true, specialization: true } },
+          },
+        },
+      },
+    }),
+    prisma.payment.count({ where }),
+  ]);
+
+  res.json(buildPaginatedResponse(data, total, page, limit));
+});
+
+// POST /api/admin/payments/:id/refund
+// Issues a full refund through Razorpay for a PAID payment. Only PAID
+// payments can be refunded - a CREATED (never paid) or already-REFUNDED
+// payment is rejected so the same payment can't be refunded twice.
+const refundPayment = asyncHandler(async (req, res) => {
+  const payment = await prisma.payment.findUnique({ where: { id: req.params.id } });
+  if (!payment) throw ApiError.notFound('Payment not found');
+  if (payment.status !== 'PAID') throw ApiError.badRequest(`Only PAID payments can be refunded (this one is ${payment.status})`);
+
+  if (!razorpayConfigured) throw new ApiError(503, 'Payments are not configured on this server');
+
+  const refund = await razorpay.payments.refund(payment.razorpayPaymentId, {
+    amount: payment.amount,
+  });
+
+  const updated = await prisma.payment.update({
+    where: { id: payment.id },
+    data: { status: 'REFUNDED', razorpayRefundId: refund.id },
+  });
+
+  res.json({ payment: updated });
+});
+
 module.exports = {
+  listPayments,
+  refundPayment,
   getProfile,
   updateProfile,
   changePassword,
