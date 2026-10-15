@@ -1,4 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Pulled in transitively by agora_rtc_engine's screen-sharing module, which
+         this app never invokes (no screen-share feature) - removed so Play Console
+         doesn't require a demo video for a permission nothing actually uses. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" tools:node="remove"/>
     <!-- Backend API, chat sockets and image uploads. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Android 13+ asks the user before we can show FCM notifications. -->
