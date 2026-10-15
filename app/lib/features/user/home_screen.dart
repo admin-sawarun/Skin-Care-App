@@ -57,7 +57,7 @@ class HomeScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              SizedBox(width: 26, height: 26, child: Image.asset('assets/images/logo_icon_transparent.png')),
+              SizedBox(height: 22, child: Image.asset('assets/images/app_logo_mark.png')),
               const SizedBox(width: 8),
               const Text(
                 'Lock and Key Skin Care',

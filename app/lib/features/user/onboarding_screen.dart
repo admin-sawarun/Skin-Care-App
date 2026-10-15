@@ -75,7 +75,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(24, 8, 12, 0),
               child: Row(
                 children: [
-                  SizedBox(width: 32, height: 32, child: Image.asset('assets/images/logo_icon_transparent.png')),
+                  SizedBox(height: 26, child: Image.asset('assets/images/app_logo_mark.png')),
                   const SizedBox(width: 8),
                   const Text('Lock and Key Skin Care', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.primaryDark)),
                   const Spacer(),

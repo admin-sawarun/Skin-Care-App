@@ -96,13 +96,7 @@ class PrescriptionScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      padding: const EdgeInsets.all(5),
-                      decoration: const BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
-                      child: Image.asset('assets/images/logo_icon.jpg', fit: BoxFit.contain),
-                    ),
+                    SizedBox(height: 26, child: Image.asset('assets/images/app_logo_mark.png', fit: BoxFit.contain)),
                     const SizedBox(width: 8),
                     const Text('Lock and Key Skin Care', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.primary)),
                     const Spacer(),

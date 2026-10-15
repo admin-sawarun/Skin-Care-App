@@ -76,20 +76,13 @@ class _AppSplashScreenState extends ConsumerState<AppSplashScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                width: 130,
-                height: 130,
-                child: Image.asset('assets/images/logo_icon_transparent.png', fit: BoxFit.contain),
+                width: 240,
+                child: Image.asset('assets/images/app_logo.png', fit: BoxFit.contain),
               )
                   .animate()
                   .scale(duration: 600.ms, curve: Curves.easeOutBack, begin: const Offset(0.4, 0.4))
                   .fadeIn(duration: 400.ms),
-              const SizedBox(height: 16),
-              const Text(
-                'Lock and Key Skin Care',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.primaryDark, fontSize: 24, fontWeight: FontWeight.w700),
-              ).animate().fadeIn(delay: 300.ms, duration: 500.ms),
-              const SizedBox(height: 10),
+              const SizedBox(height: 18),
               const Text(
                 'Healthy Skin\nHappier You',
                 textAlign: TextAlign.center,
