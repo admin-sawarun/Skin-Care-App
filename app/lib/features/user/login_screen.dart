@@ -361,14 +361,8 @@ class _Hero extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 150,
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, 8))],
-                ),
+              SizedBox(
+                width: 170,
                 child: Image.asset('assets/images/app_logo.png', fit: BoxFit.contain),
               ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack, begin: const Offset(0.6, 0.6)),
               const SizedBox(height: 18),

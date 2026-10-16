@@ -72,6 +72,9 @@ router.post('/cases/:id/schedule-call', validate({ body: scheduleCallSchema }), 
 router.get('/cases/:id/video-token', doctorController.getVideoToken);
 
 router.get('/appointments', doctorController.listAppointments);
+router.post('/cases/:id/end-call', doctorController.endCall);
+router.patch('/appointments/:callId/complete', doctorController.completeAppointment);
+router.patch('/appointments/:callId/cancel', doctorController.cancelAppointment);
 router.get('/analytics', doctorController.getAnalytics);
 
 module.exports = router;

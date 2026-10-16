@@ -358,7 +358,20 @@ const getVideoToken = asyncHandler(async (req, res) => {
 });
 
 // GET /api/doctors/appointments
+// The app never gets a "hang up" callback from Agora, so a call nobody
+// explicitly ended stays ONGOING. Anything started over 3h ago is over.
+const STALE_CALL_MS = 3 * 60 * 60 * 1000;
+
 const listAppointments = asyncHandler(async (req, res) => {
+  await prisma.videoCall.updateMany({
+    where: {
+      case: { doctorId: req.doctor.id },
+      status: 'ONGOING',
+      scheduledAt: { lt: new Date(Date.now() - STALE_CALL_MS) },
+    },
+    data: { status: 'COMPLETED' },
+  });
+
   const appointments = await prisma.videoCall.findMany({
     where: { case: { doctorId: req.doctor.id }, status: { not: 'CANCELLED' } },
     orderBy: { scheduledAt: 'desc' },
@@ -368,6 +381,43 @@ const listAppointments = asyncHandler(async (req, res) => {
   });
 
   res.json({ data: appointments });
+});
+
+async function getOwnCallOrThrow(callId, doctorId) {
+  const call = await prisma.videoCall.findUnique({ where: { id: callId }, include: { case: { select: { doctorId: true } } } });
+  if (!call || call.case.doctorId !== doctorId) throw ApiError.notFound('Call not found');
+  return call;
+}
+
+// POST /api/doctors/cases/:id/end-call
+// Sent by the doctor's app when they hang up. Only the doctor's hang-up
+// closes the call: a patient dropping out may rejoin, a doctor ending it
+// means the consultation is over.
+const endCall = asyncHandler(async (req, res) => {
+  const caseRecord = await getAssignedCaseOrThrow(req.params.id, req.doctor.id);
+  const { count } = await prisma.videoCall.updateMany({
+    where: { caseId: caseRecord.id, status: 'ONGOING' },
+    data: { status: 'COMPLETED' },
+  });
+  res.json({ completed: count });
+});
+
+// PATCH /api/doctors/appointments/:callId/complete
+const completeAppointment = asyncHandler(async (req, res) => {
+  const call = await getOwnCallOrThrow(req.params.callId, req.doctor.id);
+  if (call.status === 'CANCELLED') throw ApiError.badRequest('This call was cancelled');
+  const updated = await prisma.videoCall.update({ where: { id: call.id }, data: { status: 'COMPLETED' } });
+  res.json({ appointment: updated });
+});
+
+// PATCH /api/doctors/appointments/:callId/cancel
+// "Remove" for a call that never happened - hides it from every list,
+// since listAppointments skips CANCELLED calls.
+const cancelAppointment = asyncHandler(async (req, res) => {
+  const call = await getOwnCallOrThrow(req.params.callId, req.doctor.id);
+  if (call.status === 'COMPLETED') throw ApiError.badRequest('A completed call cannot be removed');
+  const updated = await prisma.videoCall.update({ where: { id: call.id }, data: { status: 'CANCELLED' } });
+  res.json({ appointment: updated });
 });
 
 // GET /api/doctors/analytics
@@ -435,5 +485,8 @@ module.exports = {
   scheduleCall,
   getVideoToken,
   listAppointments,
+  endCall,
+  completeAppointment,
+  cancelAppointment,
   getAnalytics,
 };

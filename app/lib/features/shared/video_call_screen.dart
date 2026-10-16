@@ -186,7 +186,13 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   Future<void> _endCall() async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final duration = _phase == _Phase.active ? _durationLabel : null;
+    final repo = ref.read(apiRepositoryProvider);
     await _leaveAndDispose();
+    if (widget.currentRole == SenderType.doctor) {
+      // Best effort: a failed call here only means the call stays "Join"
+      // until the backend's stale-call cleanup marks it completed.
+      unawaited(repo.endCall(widget.caseId).catchError((_) {}));
+    }
     if (!mounted) return;
     context.pop();
     if (duration != null) messenger?.showSnackBar(SnackBar(content: Text('Call ended · $duration')));

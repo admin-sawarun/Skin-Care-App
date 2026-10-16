@@ -313,6 +313,22 @@ class ApiRepository extends ChangeNotifier {
     await refreshAppointments();
   }
 
+  /// Doctor hung up - tells the backend the consultation call is over.
+  Future<void> endCall(String caseId) async {
+    await _dio.post('/doctors/cases/$caseId/end-call');
+    await refreshAppointments();
+  }
+
+  Future<void> completeAppointment(String callId) async {
+    await _dio.patch('/doctors/appointments/$callId/complete');
+    await refreshAppointments();
+  }
+
+  Future<void> removeAppointment(String callId) async {
+    await _dio.patch('/doctors/appointments/$callId/cancel');
+    await refreshAppointments();
+  }
+
   Future<void> markNotificationRead(String id) async {
     await _dio.patch('/users/notifications/$id/read');
     final n = notifications.firstWhere((n) => n.id == id);

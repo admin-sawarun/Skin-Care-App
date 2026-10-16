@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_avatar.dart';
 import '../../core/widgets/status_chip.dart';
+import 'call_actions_menu.dart';
 import '../../data/models/appointment_model.dart';
 import '../../data/models/case_model.dart';
 import '../../data/api/api_client.dart';
@@ -186,6 +187,7 @@ class DoctorDashboardScreen extends ConsumerWidget {
                           style: ElevatedButton.styleFrom(minimumSize: const Size(0, 34), padding: const EdgeInsets.symmetric(horizontal: 16)),
                           child: const Text('Join', style: TextStyle(fontSize: 12.5)),
                         ),
+                        CallActionsMenu(appointment: a),
                       ],
                     ),
                   )),

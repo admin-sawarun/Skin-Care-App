@@ -2,7 +2,7 @@ name: skincare_app
 description: "Lock and Key Skin Care - User & Doctor Flutter app"
 publish_to: 'none'
 
-version: 1.0.0+6
+version: 1.0.0+7
 
 environment:
   sdk: ^3.12.1

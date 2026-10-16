@@ -7,6 +7,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_avatar.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../data/api/api_repository.dart';
+import '../../data/models/appointment_model.dart';
+import 'call_actions_menu.dart';
 
 class DoctorAppointmentsScreen extends ConsumerStatefulWidget {
   const DoctorAppointmentsScreen({super.key});
@@ -61,9 +63,10 @@ class _DoctorAppointmentsScreenState extends ConsumerState<DoctorAppointmentsScr
     final now = DateTime.now();
     final selectedDays = repo.appointments.where((a) => _sameDay(a.scheduledAt, _selectedDay)).toList()
       ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-    final upcoming = repo.appointments.where((a) => a.scheduledAt.isAfter(now)).toList()
+    bool isUpcoming(AppointmentModel a) => a.scheduledAt.isAfter(now) && a.status != CallStatus.completed;
+    final upcoming = repo.appointments.where(isUpcoming).toList()
       ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-    final past = repo.appointments.where((a) => !a.scheduledAt.isAfter(now)).toList()
+    final past = repo.appointments.where((a) => !isUpcoming(a)).toList()
       ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
     return Scaffold(
@@ -185,14 +188,14 @@ class _DoctorAppointmentsScreenState extends ConsumerState<DoctorAppointmentsScr
 }
 
 class _AppointmentTile extends StatelessWidget {
-  final dynamic appointment;
+  final AppointmentModel appointment;
   final bool showDate;
   const _AppointmentTile({required this.appointment, required this.showDate});
 
   @override
   Widget build(BuildContext context) {
     final a = appointment;
-    final isPast = !a.scheduledAt.isAfter(DateTime.now());
+    final isDone = a.status == CallStatus.completed;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -212,14 +215,16 @@ class _AppointmentTile extends StatelessWidget {
               ],
             ),
           ),
-          if (isPast)
-            const Text('Completed', style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600))
-          else
+          if (isDone)
+            const Text('Completed', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w700))
+          else ...[
             ElevatedButton(
               onPressed: () => a.isVideo ? context.push('/doctor-video-call/${a.caseId}') : context.push('/doctor-chat/${a.caseId}'),
               style: ElevatedButton.styleFrom(minimumSize: const Size(0, 34), padding: const EdgeInsets.symmetric(horizontal: 16)),
               child: const Text('Join', style: TextStyle(fontSize: 12.5)),
             ),
+            CallActionsMenu(appointment: a),
+          ],
         ],
       ),
     );
