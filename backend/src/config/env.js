@@ -15,10 +15,11 @@ const env = {
 
   CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
 
-  // No SMS provider is wired up yet, so by default the generated OTP is sent
-  // back in the send-otp response and the app shows it on screen. Set to
-  // "false" once real SMS delivery (Firebase/MSG91/...) is integrated.
-  OTP_SHOW_IN_RESPONSE: process.env.OTP_SHOW_IN_RESPONSE !== 'false',
+  // Dev-only: returns the generated OTP in the send-otp response so the app
+  // can show it on screen. Off unless explicitly "true" - leaving it on in
+  // production lets anyone log into any patient account by phone number.
+  // The Android app uses Firebase phone auth and never needs this.
+  OTP_SHOW_IN_RESPONSE: process.env.OTP_SHOW_IN_RESPONSE === 'true',
 
   // Path to a downloaded service-account JSON file. Takes precedence over the
   // three vars below - see services/firebase.js.
