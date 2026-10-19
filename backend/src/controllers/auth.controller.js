@@ -36,11 +36,19 @@ const userRegister = asyncHandler(async (req, res) => {
   res.status(201).json({ token, user });
 });
 
+// The dev OTP login has no SMS delivery, so the code only ever reaches a
+// user through `devOtp`. With that off (production), the only thing the
+// endpoints still allow is guessing codes - so they're closed entirely.
+// Real patients sign in through Firebase phone auth (POST /api/auth/firebase).
+function assertDevOtpEnabled() {
+  if (!env.OTP_SHOW_IN_RESPONSE) throw ApiError.notFound('Not found');
+}
+
 // POST /api/auth/send-otp
-// Generates a fresh 6-digit code for this phone number. No SMS provider is
-// wired up yet, so while env.OTP_SHOW_IN_RESPONSE is on (the default) the
-// code is returned as `devOtp` and the app shows it on screen.
+// Generates a fresh 6-digit code for this phone number and returns it as
+// `devOtp` for the app to show on screen. Dev only - see assertDevOtpEnabled.
 const sendOtp = asyncHandler(async (req, res) => {
+  assertDevOtpEnabled();
   const { phone } = req.body;
 
   const existing = await prisma.user.findUnique({ where: { phone } });
@@ -73,6 +81,7 @@ async function loginUserByPhone(phone) {
 // patient in. Doctors do not log in here - they use email + password (POST
 // /api/auth/doctor/login).
 const verifyOtp = asyncHandler(async (req, res) => {
+  assertDevOtpEnabled();
   const { phone, otp } = req.body;
   await otpService.verifyOtp(phone, otp);
 
