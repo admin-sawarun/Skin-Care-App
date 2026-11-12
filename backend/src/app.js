@@ -35,31 +35,27 @@ app.get('/health', (req, res) => {
 
 app.use('/uploads', express.static(UPLOAD_DIR));
 
-// Public-facing homepage - linked from Razorpay/Play Store/App Store listings
-// as the business's website.
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
 // Google Play requires an account-deletion page reachable without logging
 // into the app - see routes/public.routes.js for the form's endpoint.
 app.get('/account-deletion', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/account-deletion.html'));
 });
 
-// Linked from the Play Console / App Store Connect listings and from
-// within the app (Settings/Profile).
-app.get('/privacy-policy', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/privacy-policy.html'));
-});
-app.get('/terms-and-conditions', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/terms-and-conditions.html'));
-});
-app.get('/refund-policy', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/refund-policy.html'));
-});
-app.get('/about-us', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/about-us.html'));
+// Public website (React, source in /website, built into public/web).
+// It is the business's website linked from Razorpay/Play Store/App Store,
+// and the privacy/terms/refund pages are linked from the store listings and
+// from inside the app. Keep this list in sync with the routes in website/src/App.jsx.
+const WEB_DIR = path.join(__dirname, '../public/web');
+const WEBSITE_ROUTES = [
+  '/', '/features', '/how-it-works', '/pricing', '/for-doctors', '/faq', '/about-us', '/contact',
+  '/privacy-policy', '/terms-and-conditions', '/refund-policy',
+];
+// Hashed bundles never change, so they can be cached for long; images for a week.
+app.use('/web-assets', express.static(path.join(WEB_DIR, 'web-assets'), { maxAge: '1y', immutable: true }));
+app.use('/site', express.static(path.join(WEB_DIR, 'site'), { maxAge: '7d' }));
+app.get(WEBSITE_ROUTES, (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.sendFile(path.join(WEB_DIR, 'index.html'));
 });
 
 app.use('/api/auth', authRoutes);
