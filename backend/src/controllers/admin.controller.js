@@ -250,6 +250,7 @@ const assignCase = asyncHandler(async (req, res) => {
   ]);
   if (!caseRecord) throw ApiError.notFound('Case not found');
   if (!doctor) throw ApiError.badRequest('Invalid doctorId');
+  if (doctor.status !== 'APPROVED') throw ApiError.badRequest(`${doctor.name} has not been approved yet`);
   if (!doctor.isAvailable) throw ApiError.badRequest(`${doctor.name} is not available for new cases`);
   if (['SOLVED', 'CLOSED'].includes(caseRecord.status)) {
     throw ApiError.badRequest(`A ${caseRecord.status.toLowerCase()} case cannot be reassigned`);
@@ -348,18 +349,19 @@ const updateCaseStatus = asyncHandler(async (req, res) => {
 
 // GET /api/admin/doctors?search&page
 const listDoctors = asyncHandler(async (req, res) => {
-  const { search, page: pageQuery, limit: limitQuery } = req.query;
+  const { search, status, page: pageQuery, limit: limitQuery } = req.query;
   const { page, limit, skip, take } = getPagination({ page: pageQuery, limit: limitQuery });
 
-  const where = search
-    ? {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { specialization: { contains: search, mode: 'insensitive' } },
-        ],
-      }
-    : undefined;
+  const where = {
+    ...(status && { status }),
+    ...(search && {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { specialization: { contains: search, mode: 'insensitive' } },
+      ],
+    }),
+  };
 
   const [doctors, total] = await Promise.all([
     prisma.doctor.findMany({
@@ -450,6 +452,41 @@ const createDoctor = asyncHandler(async (req, res) => {
 
   res.status(201).json({ doctor: sanitize(doctor) });
 });
+
+// PATCH /api/admin/doctors/:id/approve and /reject
+// Decides a self-registered doctor's request and tells the doctor (in-app
+// notification + push to the device they registered from).
+function decideDoctor(status) {
+  return asyncHandler(async (req, res) => {
+    const existing = await prisma.doctor.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw ApiError.notFound('Doctor not found');
+    if (existing.status === status) return res.json({ doctor: sanitize(existing) });
+
+    const approved = status === 'APPROVED';
+    const doctor = await prisma.doctor.update({
+      where: { id: existing.id },
+      data: { status, isAvailable: approved },
+    });
+
+    const title = approved ? 'Your account is approved' : 'Your account request was not approved';
+    const body = approved
+      ? 'Welcome to Lock and Key Skin Care! You can now log in to the doctor app.'
+      : 'Your doctor account request was not approved. Please contact Lock and Key Skin Care support.';
+    const type = approved ? 'DOCTOR_APPROVED' : 'DOCTOR_REJECTED';
+
+    await prisma.notification.create({ data: { userId: doctor.id, userType: 'DOCTOR', title, body, type } });
+    socket.emitToDoctor(doctor.id, 'notification', { title, body, type });
+    try {
+      await fcm.sendPushNotification({ ownerId: doctor.id, ownerType: 'DOCTOR', title, body, data: { type } });
+    } catch (err) {
+      console.error('[doctor decision] push failed:', err.message);
+    }
+
+    res.json({ doctor: sanitize(doctor) });
+  });
+}
+const approveDoctor = decideDoctor('APPROVED');
+const rejectDoctor = decideDoctor('REJECTED');
 
 // PUT /api/admin/doctors/:id
 const updateDoctor = asyncHandler(async (req, res) => {
@@ -963,6 +1000,8 @@ module.exports = {
   createDoctor,
   updateDoctor,
   deleteDoctor,
+  approveDoctor,
+  rejectDoctor,
   listUsers,
   getUserById,
   updateUser,

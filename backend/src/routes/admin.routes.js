@@ -156,11 +156,16 @@ router.get('/payments', validate({ query: listPaymentsQuerySchema }), adminContr
 router.post('/payments/:id/refund', adminController.refundPayment);
 
 // Doctors
-router.get('/doctors', validate({ query: paginationQuerySchema }), adminController.listDoctors);
+const listDoctorsQuerySchema = paginationQuerySchema.extend({
+  status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+});
+router.get('/doctors', validate({ query: listDoctorsQuerySchema }), adminController.listDoctors);
 router.get('/doctors/:id', adminController.getDoctorById);
 router.post('/doctors', validate({ body: createDoctorSchema }), adminController.createDoctor);
 router.put('/doctors/:id', validate({ body: updateDoctorSchema }), adminController.updateDoctor);
 router.delete('/doctors/:id', adminController.deleteDoctor);
+router.patch('/doctors/:id/approve', adminController.approveDoctor);
+router.patch('/doctors/:id/reject', adminController.rejectDoctor);
 
 // Users
 router.get('/users', validate({ query: paginationQuerySchema }), adminController.listUsers);

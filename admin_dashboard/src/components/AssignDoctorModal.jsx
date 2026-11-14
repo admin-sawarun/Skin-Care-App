@@ -11,7 +11,7 @@ import { toastSuccess } from '../store/toastStore';
 /// action and the Cases table's per-row action.
 export default function AssignDoctorModal({ caseId, open, onClose, onAssigned }) {
   const { data: doctorsData } = useApiQuery(
-    () => (open ? api.get('/admin/doctors', { params: { limit: 100 } }) : Promise.resolve({ data: null })),
+    () => (open ? api.get('/admin/doctors', { params: { limit: 100, status: 'APPROVED' } }) : Promise.resolve({ data: null })),
     [open],
   );
   const [selectedDoctor, setSelectedDoctor] = useState('');

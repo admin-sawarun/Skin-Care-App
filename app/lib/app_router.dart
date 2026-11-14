@@ -16,6 +16,7 @@ import 'features/shared/video_call_screen.dart';
 import 'features/user/appointments_screen.dart';
 import 'features/user/case_detail_screen.dart';
 import 'features/user/complete_profile_screen.dart';
+import 'features/user/doctor_register_screen.dart';
 import 'features/user/login_screen.dart';
 import 'features/user/my_cases_screen.dart';
 import 'features/user/notifications_screen.dart';
@@ -49,7 +50,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final ready = !session.loading && (!session.loggedIn || ref.read(apiRepositoryProvider).bootstrapped);
       if (!ready) return '/splash';
 
-      final onAuthFlow = loc == '/onboarding' || loc == '/login' || loc == '/verify-otp';
+      final onAuthFlow =
+          loc == '/onboarding' || loc == '/login' || loc == '/verify-otp' || loc == '/doctor-register';
       if (!session.loggedIn && !onAuthFlow) return '/onboarding';
       // The OTP screen needs the pending request; a refresh/deep link loses it.
       if (loc == '/verify-otp' && state.extra is! OtpRequest) return '/login';
@@ -61,6 +63,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (context, state) => const AppSplashScreen()),
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/doctor-register', builder: (context, state) => const DoctorRegisterScreen()),
       GoRoute(
         path: '/verify-otp',
         builder: (context, state) => OtpScreen(request: state.extra as OtpRequest),

@@ -7,6 +7,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
 const sanitize = require('../utils/sanitize');
 const { signToken, ROLES } = require('../utils/jwt');
+const socket = require('../services/socket');
 
 const SALT_ROUNDS = 10;
 
@@ -112,8 +113,66 @@ const firebaseLogin = asyncHandler(async (req, res) => {
   res.json(await loginUserByPhone(phone));
 });
 
+// POST /api/auth/doctor/register
+// A doctor asks for an account from the app. It stays PENDING (no login)
+// until an admin approves it; every admin is notified of the request. The
+// optional FCM token lets us tell the doctor about the decision before they
+// have ever logged in.
+const doctorRegister = asyncHandler(async (req, res) => {
+  const { name, phone, specialization, experience, password, fcmToken } = req.body;
+  const email = req.body.email.toLowerCase();
+
+  const [byEmail, byPhone] = await Promise.all([
+    prisma.doctor.findUnique({ where: { email } }),
+    prisma.doctor.findUnique({ where: { phone } }),
+  ]);
+  if (byEmail || byPhone) {
+    throw ApiError.conflict(
+      byEmail?.status === 'PENDING' || byPhone?.status === 'PENDING'
+        ? 'A request with these details is already waiting for admin approval.'
+        : 'A doctor account with this email or phone number already exists. Please log in instead.'
+    );
+  }
+
+  const doctor = await prisma.doctor.create({
+    data: {
+      name,
+      email,
+      phone,
+      specialization,
+      experience,
+      password: await bcrypt.hash(password, SALT_ROUNDS),
+      status: 'PENDING',
+      isAvailable: false,
+    },
+  });
+
+  if (fcmToken) {
+    await prisma.deviceToken.upsert({
+      where: { token: fcmToken },
+      update: { ownerId: doctor.id, ownerType: 'DOCTOR' },
+      create: { token: fcmToken, ownerId: doctor.id, ownerType: 'DOCTOR' },
+    });
+  }
+
+  const title = 'New doctor signup';
+  const body = `${doctor.name}${doctor.specialization ? ` (${doctor.specialization})` : ''} requested a doctor account. Review it in Doctors.`;
+  const admins = await prisma.admin.findMany({ select: { id: true } });
+  if (admins.length) {
+    await prisma.notification.createMany({
+      data: admins.map((a) => ({ userId: a.id, userType: 'ADMIN', title, body, type: 'DOCTOR_SIGNUP' })),
+    });
+  }
+  socket.emitToAllAdmins('notification', { title, body, type: 'DOCTOR_SIGNUP', doctorId: doctor.id });
+
+  res.status(201).json({
+    message: 'Your request has been sent. You will get a notification once the admin approves your account.',
+  });
+});
+
 // POST /api/auth/doctor/login
-// Doctor accounts are only ever created by an Admin, who sets the password.
+// Doctors are created by an admin (approved straight away) or register
+// themselves and wait for an admin's approval.
 const doctorLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -123,8 +182,16 @@ const doctorLogin = asyncHandler(async (req, res) => {
   const valid = await bcrypt.compare(password, doctor.password);
   if (!valid) throw ApiError.unauthorized('Invalid email or password');
 
+  // Checked after the password, so the status never leaks to a wrong guess.
+  if (doctor.status === 'PENDING') {
+    throw ApiError.forbidden('Your account is waiting for admin approval. You will get a notification once it is approved.');
+  }
+  if (doctor.status === 'REJECTED') {
+    throw ApiError.forbidden('Your doctor account request was not approved. Please contact Lock and Key Skin Care support.');
+  }
+
   const token = signToken({ id: doctor.id, role: ROLES.DOCTOR });
   res.json({ token, role: 'DOCTOR', doctor: sanitize(doctor) });
 });
 
-module.exports = { adminLogin, userRegister, sendOtp, verifyOtp, firebaseLogin, doctorLogin, SALT_ROUNDS };
+module.exports = { adminLogin, userRegister, sendOtp, verifyOtp, firebaseLogin, doctorRegister, doctorLogin, SALT_ROUNDS };

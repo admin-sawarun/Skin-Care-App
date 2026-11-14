@@ -208,6 +208,29 @@ class PushService {
     }
   }
 
+  /// This device's FCM token for a doctor signup request, so the backend can
+  /// push the approval before the doctor has ever logged in. Asks for
+  /// notification permission. Returns null when push isn't available.
+  Future<String?> tokenForSignup() async {
+    if (!firebaseReady) return null;
+    try {
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission();
+      if (!kIsWeb && Platform.isIOS) {
+        String? apnsToken;
+        for (var i = 0; i < 5 && apnsToken == null; i++) {
+          apnsToken = await messaging.getAPNSToken();
+          if (apnsToken == null) await Future<void>.delayed(const Duration(seconds: 1));
+        }
+        if (apnsToken == null) return null;
+      }
+      return await messaging.getToken();
+    } catch (e) {
+      debugPrint('Signup push token failed: $e');
+      return null;
+    }
+  }
+
   /// Must run while the JWT is still set, so the backend can find the row.
   Future<void> stop() async {
     final token = _token;

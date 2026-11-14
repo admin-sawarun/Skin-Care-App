@@ -72,6 +72,30 @@ class AuthApi {
     );
   }
 
+  /// Asks for a doctor account. It stays pending until the admin approves it,
+  /// so this returns the server's message instead of a login.
+  static Future<String> doctorRegister({
+    required String name,
+    required String email,
+    required String phone,
+    String? specialization,
+    int? experience,
+    required String password,
+    String? fcmToken,
+  }) async {
+    final res = await ApiClient.instance.dio.post('/auth/doctor/register', data: {
+      'name': name,
+      'email': email,
+      'phone': phone,
+      if (specialization != null && specialization.isNotEmpty) 'specialization': specialization,
+      'experience': ?experience,
+      'password': password,
+      'fcmToken': ?fcmToken,
+    });
+    return (res.data['message'] as String?) ??
+        'Your request has been sent. You will get a notification once the admin approves your account.';
+  }
+
   static Future<LoginResult> doctorLogin(String email, String password) async {
     final res = await ApiClient.instance.dio.post('/auth/doctor/login', data: {'email': email, 'password': password});
     return LoginResult(token: res.data['token'] as String, isDoctor: true);

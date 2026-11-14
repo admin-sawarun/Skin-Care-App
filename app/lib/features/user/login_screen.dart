@@ -251,7 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             subtitle: Text(_isDoctor
                 ? 'Sign in with your mobile number'
-                : 'Only for doctors added by Lock and Key Skin Care'),
+                : 'For doctors registered with Lock and Key Skin Care'),
             onTap: () {
               Navigator.of(sheetContext).pop();
               setState(() => _isDoctor = !_isDoctor);
@@ -355,19 +355,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        const Row(
-          children: [
-            Icon(Icons.info_outline_rounded, size: 14, color: AppColors.textMuted),
-            SizedBox(width: 6),
-            Expanded(
-              child: Text('Doctor accounts are created by the Lock and Key Skin Care admin.',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-            ),
-          ],
-        ),
         const SizedBox(height: 22),
         PrimaryButton(label: 'Sign in as Doctor', icon: Icons.login_rounded, onPressed: _doctorLogin, loading: _loading),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton(
+            onPressed: _loading ? null : () => context.push('/doctor-register'),
+            child: const Text.rich(
+              TextSpan(
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                children: [
+                  TextSpan(text: 'New doctor? '),
+                  TextSpan(
+                    text: 'Request an account',
+                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

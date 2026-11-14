@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSocketEvent } from '../lib/socket';
+import { api } from '../lib/api';
+import { toastSuccess } from '../store/toastStore';
 import {
   Bell,
   BellRing,
@@ -46,8 +48,29 @@ export default function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [unseen, setUnseen] = useState(0);
+  const [pendingDoctors, setPendingDoctors] = useState(0);
 
-  useSocketEvent(['case_assigned', 'notification', 'new_message'], () => setUnseen((c) => c + 1));
+  // Doctors waiting for approval, shown as a badge on "Doctors" so a signup is
+  // not missed even if it happened while no admin was online.
+  const refreshPendingDoctors = useCallback(() => {
+    api
+      .get('/admin/doctors', { params: { status: 'PENDING', limit: 1 } })
+      .then(({ data }) => setPendingDoctors(data?.total ?? 0))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    refreshPendingDoctors();
+    window.addEventListener('doctors-pending-changed', refreshPendingDoctors);
+    return () => window.removeEventListener('doctors-pending-changed', refreshPendingDoctors);
+  }, [refreshPendingDoctors]);
+
+  useSocketEvent(['case_assigned', 'notification', 'new_message'], (payload) => {
+    setUnseen((c) => c + 1);
+    if (payload?.type === 'DOCTOR_SIGNUP') {
+      toastSuccess(`${payload.title}: ${payload.body}`);
+      refreshPendingDoctors();
+    }
+  });
 
   function handleLogout() {
     disconnectSocket();
@@ -115,6 +138,14 @@ export default function AppShell() {
                     <Icon className="h-4 w-4" />
                   </span>
                   {label}
+                  {to === '/doctors' && pendingDoctors > 0 && (
+                    <span
+                      title={`${pendingDoctors} doctor request(s) waiting for approval`}
+                      className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white"
+                    >
+                      {pendingDoctors}
+                    </span>
+                  )}
                 </span>
                 <ChevronRight className={`h-4 w-4 transition-transform ${isActive ? 'text-white' : 'text-slate-300 group-hover:translate-x-0.5'}`} />
               </>

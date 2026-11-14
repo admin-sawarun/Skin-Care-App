@@ -15,6 +15,12 @@ datasource db {
 // Enums
 // ---------------------------------------------------------------------------
 
+enum DoctorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum CaseStatus {
   PENDING
   ASSIGNED
@@ -93,18 +99,21 @@ model User {
 }
 
 model Doctor {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   name           String
-  email          String   @unique
-  phone          String   @unique
+  email          String       @unique
+  phone          String       @unique
   avatar         String?
   specialization String?
   experience     Int?
-  isAvailable    Boolean  @default(true)
+  isAvailable    Boolean      @default(true)
+  // Self-registered doctors start PENDING until an admin approves them;
+  // doctors created by an admin are APPROVED straight away.
+  status         DoctorStatus @default(APPROVED)
   // bcrypt hash. Doctors log in with email + password (POST
   // /api/auth/doctor/login); the Admin sets it when creating the doctor.
   password       String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime     @default(now())
 
   cases   Case[]
   ratings Rating[]
@@ -160,16 +169,16 @@ model Case {
 // be created against a Payment that is PAID and not already linked to
 // another case (see the unique Case.paymentId above).
 model Payment {
-  id                 String        @id @default(uuid())
-  userId             String
-  razorpayOrderId    String        @unique
-  razorpayPaymentId  String?
-  razorpaySignature  String?
-  razorpayRefundId   String?
-  amount             Int
-  status             PaymentStatus @default(CREATED)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  id                String        @id @default(uuid())
+  userId            String
+  razorpayOrderId   String        @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  razorpayRefundId  String?
+  amount            Int
+  status            PaymentStatus @default(CREATED)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   case Case?
@@ -280,12 +289,12 @@ model Ticket {
 }
 
 model VideoCall {
-  id          String          @id @default(uuid())
-  caseId      String
-  scheduledAt DateTime
-  status      VideoCallStatus @default(SCHEDULED)
-  roomId      String
-  createdAt   DateTime        @default(now())
+  id              String          @id @default(uuid())
+  caseId          String
+  scheduledAt     DateTime
+  status          VideoCallStatus @default(SCHEDULED)
+  roomId          String
+  createdAt       DateTime        @default(now())
   // Stamped every time that side fetches a fresh join token (see
   // getVideoToken in user/doctor.controller.js) - there's no explicit
   // "left the call" signal from the app, so "the other side's stamp is
@@ -326,11 +335,11 @@ enum AccountDeletionStatus {
 // DELETE /api/users/account path is; an admin confirms the phone number
 // owns the account and completes it from the admin dashboard instead.
 model AccountDeletionRequest {
-  id          String                 @id @default(uuid())
+  id          String                @id @default(uuid())
   phone       String
   reason      String?
-  status      AccountDeletionStatus  @default(PENDING)
-  createdAt   DateTime               @default(now())
+  status      AccountDeletionStatus @default(PENDING)
+  createdAt   DateTime              @default(now())
   processedAt DateTime?
 
   @@index([status])
