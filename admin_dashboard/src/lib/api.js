@@ -14,9 +14,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // A 401 on the login request itself just means a wrong email or password:
+    // let the login form show it. Any other 401 means the saved session
+    // expired, so sign out and go to the login page.
+    const isLoginRequest = error.config?.url?.includes('/auth/admin/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       useAuthStore.getState().logout();
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login') window.location.href = '/login';
     }
     return Promise.reject(error);
   },
