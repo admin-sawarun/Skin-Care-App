@@ -9,6 +9,10 @@
 // existing cases are test data. Payments and user accounts other than the demo
 // patients are kept.
 //
+// Add --all-payments to also delete every payment record. Use it only while
+// all payments are Razorpay test-mode payments: real payments must be kept
+// for accounts and tax.
+//
 // It only touches the exact demo doctors (by email) and demo patients (by phone)
 // from seed.js. The admin account and the question flow are kept: the admin is
 // the real login and the app needs a question flow. Safe to run more than once.
@@ -25,6 +29,7 @@ const DEMO_USER_PHONES = ['+919820000001', '+919820000002', '+919820000003'];
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
 const ALL_CASES = process.argv.includes('--all-cases');
+const ALL_PAYMENTS = process.argv.includes('--all-payments');
 
 async function main() {
   const doctors = await prisma.doctor.findMany({
@@ -53,9 +58,15 @@ async function main() {
   ]);
 
   const totalCases = await prisma.case.count();
+  const payments = await prisma.payment.aggregate({ _count: true, _sum: { amount: true } });
 
-  console.log(`[demo-data] mode: ${APPLY ? 'APPLY' : 'dry run'}${ALL_CASES ? ' + all cases' : ''}`);
+  console.log(
+    `[demo-data] mode: ${APPLY ? 'APPLY' : 'dry run'}${ALL_CASES ? ' + all cases' : ''}${ALL_PAYMENTS ? ' + all payments' : ''}`
+  );
   if (ALL_CASES) console.log(`[demo-data] ALL cases in the database (deleted): ${totalCases}`);
+  if (ALL_PAYMENTS) {
+    console.log(`[demo-data] ALL payments (deleted): ${payments._count}, total amount (paise): ${payments._sum.amount || 0}`);
+  }
   console.log(`[demo-data] demo doctors found: ${doctors.length} (${doctors.map((d) => d.name).join(', ') || 'none'})`);
   console.log(`[demo-data] demo patients found: ${users.length} (${users.map((u) => u.name).join(', ') || 'none'})`);
   console.log(`[demo-data] demo patients' cases (deleted with them): ${demoUserCases}`);
@@ -66,7 +77,7 @@ async function main() {
     console.log('[demo-data] nothing deleted. Run with --apply to delete.');
     return;
   }
-  if (!doctors.length && !users.length && !(ALL_CASES && totalCases)) {
+  if (!doctors.length && !users.length && !(ALL_CASES && totalCases) && !(ALL_PAYMENTS && payments._count)) {
     console.log('[demo-data] no demo data left, nothing to do.');
     return;
   }
@@ -89,7 +100,10 @@ async function main() {
     prisma.otpCode.deleteMany({ where: { phone: { in: DEMO_USER_PHONES } } }),
     prisma.user.deleteMany({ where: { id: { in: userIds } } }),
     prisma.doctor.deleteMany({ where: { id: { in: doctorIds } } }),
+    // After the cases above, so no case still points at a payment.
+    ...(ALL_PAYMENTS ? [prisma.payment.deleteMany({})] : []),
   ]);
+  if (ALL_PAYMENTS) console.log('[demo-data] all payment records removed.');
   console.log(
     ALL_CASES
       ? '[demo-data] done: demo doctors, demo patients and ALL cases removed.'
