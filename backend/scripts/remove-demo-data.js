@@ -4,6 +4,11 @@
 //   node scripts/remove-demo-data.js           dry run: prints what it would delete
 //   node scripts/remove-demo-data.js --apply   deletes it
 //
+// Add --all-cases to also delete every case in the database (with its
+// messages, solutions, status history, ratings and video calls), for when all
+// existing cases are test data. Payments and user accounts other than the demo
+// patients are kept.
+//
 // It only touches the exact demo doctors (by email) and demo patients (by phone)
 // from seed.js. The admin account and the question flow are kept: the admin is
 // the real login and the app needs a question flow. Safe to run more than once.
@@ -19,6 +24,7 @@ const DEMO_USER_PHONES = ['+919820000001', '+919820000002', '+919820000003'];
 
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
+const ALL_CASES = process.argv.includes('--all-cases');
 
 async function main() {
   const doctors = await prisma.doctor.findMany({
@@ -46,7 +52,10 @@ async function main() {
     }),
   ]);
 
-  console.log(`[demo-data] mode: ${APPLY ? 'APPLY' : 'dry run'}`);
+  const totalCases = await prisma.case.count();
+
+  console.log(`[demo-data] mode: ${APPLY ? 'APPLY' : 'dry run'}${ALL_CASES ? ' + all cases' : ''}`);
+  if (ALL_CASES) console.log(`[demo-data] ALL cases in the database (deleted): ${totalCases}`);
   console.log(`[demo-data] demo doctors found: ${doctors.length} (${doctors.map((d) => d.name).join(', ') || 'none'})`);
   console.log(`[demo-data] demo patients found: ${users.length} (${users.map((u) => u.name).join(', ') || 'none'})`);
   console.log(`[demo-data] demo patients' cases (deleted with them): ${demoUserCases}`);
@@ -57,13 +66,20 @@ async function main() {
     console.log('[demo-data] nothing deleted. Run with --apply to delete.');
     return;
   }
-  if (!doctors.length && !users.length) {
+  if (!doctors.length && !users.length && !(ALL_CASES && totalCases)) {
     console.log('[demo-data] no demo data left, nothing to do.');
     return;
   }
 
   const ownerIds = [...doctorIds, ...userIds];
   await prisma.$transaction([
+    // Case children cascade (messages, solutions, history, ratings, video calls).
+    ...(ALL_CASES
+      ? [
+          prisma.notification.deleteMany({ where: { caseId: { not: null } } }),
+          prisma.case.deleteMany({}),
+        ]
+      : []),
     prisma.case.updateMany({
       where: { id: { in: realCasesToRequeue.map((c) => c.id) } },
       data: { status: 'PENDING' },
@@ -74,7 +90,11 @@ async function main() {
     prisma.user.deleteMany({ where: { id: { in: userIds } } }),
     prisma.doctor.deleteMany({ where: { id: { in: doctorIds } } }),
   ]);
-  console.log('[demo-data] done: demo doctors, patients and their cases removed.');
+  console.log(
+    ALL_CASES
+      ? '[demo-data] done: demo doctors, demo patients and ALL cases removed.'
+      : '[demo-data] done: demo doctors, patients and their cases removed.'
+  );
 }
 
 main()
