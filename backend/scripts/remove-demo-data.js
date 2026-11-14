@@ -13,6 +13,10 @@
 // all payments are Razorpay test-mode payments: real payments must be kept
 // for accounts and tax.
 //
+// Add --all-users to also delete every patient account (their cases, payments,
+// tickets and ratings go with them), plus patient notifications, device tokens
+// and login codes. Doctors, admins and the question flow are not touched.
+//
 // It only touches the exact demo doctors (by email) and demo patients (by phone)
 // from seed.js. The admin account and the question flow are kept: the admin is
 // the real login and the app needs a question flow. Safe to run more than once.
@@ -30,6 +34,7 @@ const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
 const ALL_CASES = process.argv.includes('--all-cases');
 const ALL_PAYMENTS = process.argv.includes('--all-payments');
+const ALL_USERS = process.argv.includes('--all-users');
 
 async function main() {
   const doctors = await prisma.doctor.findMany({
@@ -59,10 +64,16 @@ async function main() {
 
   const totalCases = await prisma.case.count();
   const payments = await prisma.payment.aggregate({ _count: true, _sum: { amount: true } });
+  const allUsers = ALL_USERS ? await prisma.user.findMany({ select: { name: true, phone: true } }) : [];
 
   console.log(
-    `[demo-data] mode: ${APPLY ? 'APPLY' : 'dry run'}${ALL_CASES ? ' + all cases' : ''}${ALL_PAYMENTS ? ' + all payments' : ''}`
+    `[demo-data] mode: ${APPLY ? 'APPLY' : 'dry run'}${ALL_CASES ? ' + all cases' : ''}${ALL_PAYMENTS ? ' + all payments' : ''}${ALL_USERS ? ' + all users' : ''}`
   );
+  if (ALL_USERS) {
+    // Only the last 4 digits, so full phone numbers don't end up in the logs.
+    const list = allUsers.map((u) => `${u.name || 'no name'} (..${(u.phone || '').slice(-4)})`).join(', ');
+    console.log(`[demo-data] ALL patient accounts (deleted): ${allUsers.length}${list ? ` - ${list}` : ''}`);
+  }
   if (ALL_CASES) console.log(`[demo-data] ALL cases in the database (deleted): ${totalCases}`);
   if (ALL_PAYMENTS) {
     console.log(`[demo-data] ALL payments (deleted): ${payments._count}, total amount (paise): ${payments._sum.amount || 0}`);
@@ -77,7 +88,13 @@ async function main() {
     console.log('[demo-data] nothing deleted. Run with --apply to delete.');
     return;
   }
-  if (!doctors.length && !users.length && !(ALL_CASES && totalCases) && !(ALL_PAYMENTS && payments._count)) {
+  if (
+    !doctors.length &&
+    !users.length &&
+    !(ALL_CASES && totalCases) &&
+    !(ALL_PAYMENTS && payments._count) &&
+    !(ALL_USERS && allUsers.length)
+  ) {
     console.log('[demo-data] no demo data left, nothing to do.');
     return;
   }
@@ -102,8 +119,18 @@ async function main() {
     prisma.doctor.deleteMany({ where: { id: { in: doctorIds } } }),
     // After the cases above, so no case still points at a payment.
     ...(ALL_PAYMENTS ? [prisma.payment.deleteMany({})] : []),
+    // Patients last: their cases, payments, tickets and ratings cascade.
+    ...(ALL_USERS
+      ? [
+          prisma.notification.deleteMany({ where: { userType: 'USER' } }),
+          prisma.deviceToken.deleteMany({ where: { ownerType: 'USER' } }),
+          prisma.otpCode.deleteMany({}),
+          prisma.user.deleteMany({}),
+        ]
+      : []),
   ]);
   if (ALL_PAYMENTS) console.log('[demo-data] all payment records removed.');
+  if (ALL_USERS) console.log('[demo-data] all patient accounts removed.');
   console.log(
     ALL_CASES
       ? '[demo-data] done: demo doctors, demo patients and ALL cases removed.'
