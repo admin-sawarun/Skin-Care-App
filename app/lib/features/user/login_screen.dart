@@ -167,7 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _Hero(topPadding: top, isDoctor: _isDoctor),
+            _Hero(topPadding: top, isDoctor: _isDoctor, onMore: _showMoreOptions),
             Transform.translate(
               offset: const Offset(0, -36),
               child: Padding(
@@ -182,11 +182,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _RoleSwitch(
-                        isDoctor: _isDoctor,
-                        onChanged: (v) => setState(() => _isDoctor = v),
-                      ),
-                      const SizedBox(height: 22),
+                      if (_isDoctor) ...[
+                        TextButton.icon(
+                          onPressed: () => setState(() => _isDoctor = false),
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, foregroundColor: AppColors.primary),
+                          icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                          label: const Text('Patient login', style: TextStyle(fontWeight: FontWeight.w600)),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 280),
                         transitionBuilder: (child, anim) => FadeTransition(
@@ -222,6 +226,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Doctor sign-in is tucked behind the ⋮ menu so patients don't mistake it
+  /// for their own login. Doctor accounts are created by the admin only.
+  void _showMoreOptions() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+          child: ListTile(
+            leading: Icon(
+              _isDoctor ? Icons.person_rounded : Icons.medical_services_rounded,
+              color: AppColors.primary,
+            ),
+            title: Text(
+              _isDoctor ? 'Patient login' : 'Login for doctors',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(_isDoctor
+                ? 'Sign in with your mobile number'
+                : 'Only for doctors added by Lock and Key Skin Care'),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              setState(() => _isDoctor = !_isDoctor);
+            },
+          ),
         ),
       ),
     );
@@ -341,10 +376,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 class _Hero extends StatelessWidget {
   final double topPadding;
   final bool isDoctor;
-  const _Hero({required this.topPadding, required this.isDoctor});
+  final VoidCallback onMore;
+  const _Hero({required this.topPadding, required this.isDoctor, required this.onMore});
 
   @override
   Widget build(BuildContext context) {
+    // The ⋮ button sits in an outer Stack (not inside the padded content), so
+    // its whole tap area is inside the hero's bounds and receives taps.
+    return Stack(
+      children: [
+        _content(context),
+        Positioned(
+          top: topPadding + 4,
+          right: 4,
+          child: IconButton(
+            onPressed: onMore,
+            tooltip: 'More options',
+            icon: Icon(Icons.more_vert_rounded, color: Colors.white.withValues(alpha: 0.9)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _content(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(24, topPadding + 28, 24, 64),
@@ -405,77 +460,6 @@ class _Bubble extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)),
-    );
-  }
-}
-
-/// Patient / Doctor segmented control with a sliding highlight.
-class _RoleSwitch extends StatelessWidget {
-  final bool isDoctor;
-  final ValueChanged<bool> onChanged;
-  const _RoleSwitch({required this.isDoctor, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    Widget option(String label, IconData icon, bool value) {
-      final selected = isDoctor == value;
-      return Expanded(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => onChanged(value),
-          child: SizedBox(
-            height: 44,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: selected ? Colors.white : AppColors.textLight),
-                const SizedBox(width: 6),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                    color: selected ? Colors.white : AppColors.textLight,
-                  ),
-                  child: Text(label),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
-      child: Stack(
-        children: [
-          AnimatedAlign(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            alignment: isDoctor ? Alignment.centerRight : Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: 0.5,
-              child: Container(
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: AppColors.primaryGradient),
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
-                ),
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              option('Patient', Icons.person_rounded, false),
-              option('Doctor', Icons.medical_services_rounded, true),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
