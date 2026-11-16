@@ -1,21 +1,26 @@
-// Outgoing email service (SMTP via nodemailer).
+// Outgoing email service for doctor-account lifecycle emails: a "request
+// received" note when a doctor self-registers, and an "approved"/"not
+// approved" note when an admin decides the request.
 //
-// Used for doctor-account lifecycle emails: a "request received" note when a
-// doctor self-registers, and an "approved"/"not approved" note when an admin
-// decides the request.
-//
-// When SMTP_* env vars are empty the module is a no-op stub that just logs,
-// so local dev and tests run without a mailbox and no call site has to change
-// (same pattern as services/fcm.js). Every send is best-effort: failures are
-// caught and logged, never thrown, so a mail problem can't break approval.
+// Two transports, picked at send time:
+//   1. Brevo HTTP API (preferred when BREVO_API_KEY is set) - sends over HTTPS,
+//      so it works on hosts like Railway that block outbound SMTP ports.
+//   2. SMTP via nodemailer (when SMTP_* are set) - used locally or on hosts
+//      that allow SMTP.
+// With neither configured the module is a no-op stub that just logs, so dev
+// and tests run without a mailbox (same pattern as services/fcm.js). Every
+// send is best-effort: failures are caught and logged, never thrown, so a
+// mail problem can't break registration or approval.
 const nodemailer = require('nodemailer');
 const env = require('../config/env');
 
-const isConfigured = Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+const brevoConfigured = Boolean(env.BREVO_API_KEY);
+const smtpConfigured = Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+const isConfigured = brevoConfigured || smtpConfigured;
 
 let transporter = null;
 function getTransporter() {
-  if (!isConfigured) return null;
+  if (!smtpConfigured) return null;
   if (!transporter) {
     transporter = nodemailer.createTransport({
       host: env.SMTP_HOST,
@@ -25,6 +30,29 @@ function getTransporter() {
     });
   }
   return transporter;
+}
+
+// Sends through Brevo's transactional email API over HTTPS.
+async function sendViaBrevo({ to, subject, html, text }) {
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': env.BREVO_API_KEY,
+      'content-type': 'application/json',
+      accept: 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: BRAND, email: FROM() },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Brevo ${res.status}: ${body.slice(0, 300)}`);
+  }
 }
 
 const FROM = () => env.MAIL_FROM || env.SMTP_USER;
@@ -52,20 +80,21 @@ function wrap(heading, lines, accent = '#0f766e') {
 }
 
 async function send({ to, subject, heading, lines, accent }) {
-  const tx = getTransporter();
-  if (!tx) {
-    console.log(`[mailer] (stub, SMTP not configured) would email ${to}: ${subject}`);
-    return;
-  }
+  const html = wrap(heading, lines, accent);
+  const text = lines.map((l) => l.replace(/<[^>]+>/g, '')).join('\n\n');
   try {
-    await tx.sendMail({
-      from: `${BRAND} <${FROM()}>`,
-      to,
-      subject,
-      text: lines.map((l) => l.replace(/<[^>]+>/g, '')).join('\n\n'),
-      html: wrap(heading, lines, accent),
-    });
-    console.log(`[mailer] sent "${subject}" to ${to}`);
+    if (brevoConfigured) {
+      await sendViaBrevo({ to, subject, html, text });
+      console.log(`[mailer] sent "${subject}" to ${to} via Brevo`);
+      return;
+    }
+    const tx = getTransporter();
+    if (!tx) {
+      console.log(`[mailer] (stub, email not configured) would email ${to}: ${subject}`);
+      return;
+    }
+    await tx.sendMail({ from: `${BRAND} <${FROM()}>`, to, subject, text, html });
+    console.log(`[mailer] sent "${subject}" to ${to} via SMTP`);
   } catch (err) {
     console.error(`[mailer] failed to email ${to}:`, err.message);
   }

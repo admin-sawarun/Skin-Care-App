@@ -52,6 +52,11 @@ const env = {
   SMTP_PASS: process.env.SMTP_PASS || '',
   // The visible "from" address; defaults to SMTP_USER when left empty.
   MAIL_FROM: process.env.MAIL_FROM || '',
+
+  // Brevo (HTTP email API). Preferred over SMTP when set, because some hosts
+  // (e.g. Railway) block outbound SMTP ports - Brevo sends over HTTPS instead.
+  // The MAIL_FROM address must be a verified sender in the Brevo account.
+  BREVO_API_KEY: process.env.BREVO_API_KEY || '',
 };
 
 if (env.NODE_ENV !== 'test' && !env.DATABASE_URL) {
