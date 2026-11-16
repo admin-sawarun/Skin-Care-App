@@ -8,6 +8,7 @@ const ApiError = require('../utils/ApiError');
 const sanitize = require('../utils/sanitize');
 const { signToken, ROLES } = require('../utils/jwt');
 const socket = require('../services/socket');
+const mailer = require('../services/mailer');
 
 const SALT_ROUNDS = 10;
 
@@ -164,6 +165,9 @@ const doctorRegister = asyncHandler(async (req, res) => {
     });
   }
   socket.emitToAllAdmins('notification', { title, body, type: 'DOCTOR_SIGNUP', doctorId: doctor.id });
+
+  // Confirm to the doctor by email that the request was received (best-effort).
+  mailer.sendDoctorRegistrationReceived(doctor).catch(() => {});
 
   res.status(201).json({
     message: 'Your request has been sent. You will get a notification once the admin approves your account.',

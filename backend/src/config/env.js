@@ -39,6 +39,19 @@ const env = {
   // Case-submission fee, in paise (smallest currency unit Razorpay expects).
   // 39900 paise = ₹399.
   CASE_SUBMISSION_FEE_PAISE: parseInt(process.env.CASE_SUBMISSION_FEE_PAISE, 10) || 39900,
+
+  // Outgoing email (SMTP) for doctor-account notifications. When these are
+  // empty the mailer is a no-op, so local dev and tests run without a mailbox.
+  // On Railway set the Zoho (or other) account's app password, never the
+  // normal login password.
+  SMTP_HOST: process.env.SMTP_HOST || '',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT, 10) || 465,
+  // true for port 465 (SSL), false for 587 (STARTTLS).
+  SMTP_SECURE: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : true,
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  // The visible "from" address; defaults to SMTP_USER when left empty.
+  MAIL_FROM: process.env.MAIL_FROM || '',
 };
 
 if (env.NODE_ENV !== 'test' && !env.DATABASE_URL) {

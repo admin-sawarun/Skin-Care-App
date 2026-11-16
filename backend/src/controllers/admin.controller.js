@@ -6,6 +6,7 @@ const sanitize = require('../utils/sanitize');
 const { getPagination, buildPaginatedResponse } = require('../utils/pagination');
 const socket = require('../services/socket');
 const fcm = require('../services/fcm');
+const mailer = require('../services/mailer');
 const { recordCaseStatus } = require('../services/caseHistory');
 const { toCsv } = require('../utils/csv');
 const { buildCaseFilter } = require('../utils/caseFilter');
@@ -481,6 +482,9 @@ function decideDoctor(status) {
     } catch (err) {
       console.error('[doctor decision] push failed:', err.message);
     }
+
+    // Email the doctor the decision too (best-effort; never blocks approval).
+    mailer.sendDoctorDecision(doctor, approved).catch(() => {});
 
     res.json({ doctor: sanitize(doctor) });
   });
